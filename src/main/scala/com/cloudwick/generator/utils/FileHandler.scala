@@ -1,98 +1,36 @@
 package com.cloudwick.generator.utils
 
-import scala.collection.mutable.ArrayBuffer
 import java.io.{FileOutputStream, OutputStreamWriter, Writer, File}
-import org.apache.avro.file.DataFileWriter
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
-import org.apache.avro.{file, Schema}
-import org.apache.avro.io.DatumWriter
 import java.text.SimpleDateFormat
+import scala.collection.mutable.ArrayBuffer
+import org.slf4j.LoggerFactory
 
 /**
- * Utilities for writing and reading from file
+ * File handler with inbuilt capability to roll file's and is thread safe
  * @author ashrith 
  */
-class FileHandler {
+class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: Boolean = false) {
+  lazy val logger = LoggerFactory.getLogger(getClass)
   private var stream: Writer = null
   private var openTime: Long = 0
   private var bytesWrittenToFile: Long = 0
-  /**
-   * Writes to a file using java print writer
-   * @param f java file object
-   * @param op java print writer object
-   * @return
-   *
-   * Usage:
-   * import java.io._
-   * val data = Array("Five","strings","in","a","file!")
-   * writeToFile(new File("example.txt"))(p => {
-   *  data.foreach(p.println)
-   * })
-   */
-  def writeToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
-    val p = new java.io.PrintWriter(f)
-    try { op(p) } finally { p.close() }
+
+  if (new File(fileName).exists()) {
+    roll()
+  } else {
+    openFile()
   }
 
-  /**
-   * Writes to a file using java file writer
-   * @param f java file object
-   * @param op java buffered writer object
-   * @return
-   *
-   * Usage:
-   * import java.io._
-   * Usage: writeBufferedToFile(new FileWriter(new File("example.txt")))(bw => {
-   *   data.foreach(bw.println)
-   * })
-   */
-  def writeBufferedToFile(f: java.io.File)(op: java.io.BufferedWriter => Unit) {
-    val bw = new java.io.BufferedWriter(new java.io.FileWriter(f))
-    try { op(bw) } finally { bw.close() }
+  def flush() = {
+    stream.flush()
   }
 
-  /**
-   * Writes list of records to a specified file object with specified buffer size
-   * @param file object
-   * @param records list of records to write
-   * @param bufferSize to use for the buffered writer
-   */
-  def writeBuffered(file: java.io.File, records: ArrayBuffer[String], bufferSize: Int) {
-    val fw = new java.io.FileWriter(file)
-    val bw = new java.io.BufferedWriter(fw, bufferSize)
+  def close() = {
+    flush()
     try {
-      records.foreach { record =>
-        bw.write(record)
-      }
-      bw.flush()
-    } finally {
-      bw.close()
-      fw.close()
-    }
-  }
-
-  /**
-   * Initializes avro file with specified avro schema
-   * @param dest file object
-   * @param schemaDesc avro schema
-   * @return DataFileWriter
-   */
-  def initializeAvroFile(dest: File, schemaDesc: String): DataFileWriter[GenericRecord] = {
-    val schema = new Schema.Parser().parse(schemaDesc)
-    val writer:DatumWriter[GenericRecord] = new GenericDatumWriter[GenericRecord](schema)
-    val dataFileWriter:DataFileWriter[GenericRecord] = new file.DataFileWriter[GenericRecord](writer)
-    dataFileWriter.create(schema, dest)
-  }
-
-  /**
-   * Closes avro file descriptor
-   * @param dataFileWriter object
-   */
-  def closeAvroFile(dataFileWriter: DataFileWriter[GenericRecord]) {
-    if (dataFileWriter != null) {
-      println("Closing avro file descriptor")
-      dataFileWriter.close()
-    }
+      logger.debug("Attempting to close the file {}", fileName)
+      stream.close()
+    } catch { case _: Throwable => () }
   }
 
   def timeSuffix = {
@@ -100,16 +38,18 @@ class FileHandler {
     dateFormat.format(new java.util.Date)
   }
 
-  def openFile(fileName: String, append: Boolean) = {
+  def openFile() = {
+    logger.debug("Attempting to open the file {}", fileName)
     val dir = new File(fileName).getParentFile
     if ((dir ne null) && !dir.exists) dir.mkdirs
-    val stream = new OutputStreamWriter(new FileOutputStream(fileName, append), "UTF-8")
-    var openTime = System.currentTimeMillis()
-
+    stream = new OutputStreamWriter(new FileOutputStream(fileName, append), "UTF-8")
+    openTime = System.currentTimeMillis()
+    bytesWrittenToFile = 0
   }
 
-  def roll(writer: Writer, fileName: String) = synchronized {
-    writer.close()
+  def roll() = synchronized {
+    logger.debug("Attempting to roll file")
+    if (stream ne null) stream.close()
     val n = fileName.lastIndexOf('.')
     val newFileName = if (n > 0) {
       fileName.substring(0, n) + "-" + timeSuffix + fileName.substring(n)
@@ -118,5 +58,40 @@ class FileHandler {
     }
     new File(fileName).renameTo(new File(newFileName))
     openFile()
+  }
+
+  def publish(record: String) = {
+    try {
+      val lineSizeBytes = record.getBytes("UTF-8").length
+      synchronized {
+        if (bytesWrittenToFile + lineSizeBytes > maxFileSizeBytes) {
+          roll()
+        }
+        stream.write(record)
+        stream.flush()
+        bytesWrittenToFile += lineSizeBytes
+      }
+    } catch {
+      case e: Throwable => logger.error("Error:: {}", e)
+    }
+  }
+
+  def publishBuffered(records: ArrayBuffer[String]) = {
+    var lineSizeBytes: Int = 0
+    try {
+      synchronized {
+        records.foreach { record =>
+          lineSizeBytes = record.getBytes("UTF-8").length
+          if (bytesWrittenToFile + lineSizeBytes > maxFileSizeBytes) {
+            roll()
+          }
+          stream.write(record)
+          bytesWrittenToFile += lineSizeBytes
+        }
+        stream.flush()
+      }
+    } catch {
+      case e: Throwable => logger.error("Error:: {}", e)
+    }
   }
 }
