@@ -13,7 +13,7 @@ object Driver extends App {
    * Command line option parser
    */
   val optionsParser = new scopt.OptionParser[OptionsConfig]("generator") {
-    head("Movie Analytics")
+    head("OnDemand Video Service Analytics")
     opt[Int]("eventsPerSec") action { (x, c) =>
       c.copy(eventsPerSec = x)
     } text "number of events to generate per sec, use this to throttle the generator"
@@ -39,8 +39,11 @@ object Driver extends App {
     opt[Long]('e', "totalEvents") action { (x, c) =>
       c.copy(totalEvents = x)
     } text "total number of events to generate, default: 1000"
-    opt[Boolean]('m', "multiTable") action { (x, c) =>
-      c.copy(multiTable = x)
+    opt[Long]('c', "customersDataSetSize") action { (x, c) =>
+      c.copy(customerDataSetSize = x)
+    } text "total number of customers data set to build, default: 100000L"
+    opt[Unit]('m', "multiTable") action { (_, c) =>
+      c.copy(multiTable = true)
     } text "generate data as multi tables format, default: false"
     opt[Int]('b', "flushBatch") action { (x, c) =>
       c.copy(flushBatch = x)
@@ -58,7 +61,7 @@ object Driver extends App {
     logger.info(s"Successfully parsed command line args : $config")
 
     try {
-      //new ConcurrentWriter(config.totalEvents, config).run()
+      new ConcurrentWriter(config.totalEvents, config).run()
     } catch {
       case e: Exception => logger.error("Error : {}", e.fillInStackTrace())
     }

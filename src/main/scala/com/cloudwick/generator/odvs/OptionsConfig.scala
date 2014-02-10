@@ -12,6 +12,7 @@ case class OptionsConfig(
   totalEvents: Long = 1000,
   flushBatch: Int = 10000,
   multiTable: Boolean = false,
+  customerDataSetSize: Long = 1000000,
   threadsCount: Int = 1,
   threadPoolSize: Int = 10
 )

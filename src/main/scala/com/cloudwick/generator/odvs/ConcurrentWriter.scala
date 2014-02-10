@@ -17,6 +17,16 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
   val finalBytesCounter: AtomicLong = new AtomicLong(0L)
   val messagesPerThread: Int = (totalEvents / config.threadsCount).toInt
   val messagesRange = Range(0, totalEvents.toInt, messagesPerThread)
+  val customers = scala.collection.mutable.Map[Long, String]()
+  val person = new Person
+
+  def buildCustomersMap = {
+    logger.debug("Building a customer data set of size: {}", config.customerDataSetSize)
+    (1L to config.customerDataSetSize).foreach { custId =>
+      customers += custId -> person.gen
+    }
+    customers.toMap
+  }
 
   def run() = {
     utils.time(s"Generating $totalEvents events") {
@@ -27,6 +37,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
             new Writer(
               messagesRange(threadCount-1),
               messagesRange(threadCount-1) + (messagesPerThread-1),
+              buildCustomersMap,
               finalCounter,
               finalBytesCounter,
               config
@@ -34,7 +45,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
           )
         }
       } catch {
-        case e: Exception => logger.error("Error: {}", e.printStackTrace())
+        case e: Exception => logger.error("Error:: {}", e.printStackTrace())
       } finally {
         threadPool.shutdown()
       }
