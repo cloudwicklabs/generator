@@ -3,14 +3,15 @@
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>info</level>
+        </filter>
     </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/logFile.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-          <!-- rollover daily -->
           <fileNamePattern>logFile.%d{yyyy-MM-dd}.log</fileNamePattern>
-          <!-- keep 1 days worth of history -->
           <maxHistory>5</maxHistory>
         </rollingPolicy>
         <append>true</append>
@@ -19,8 +20,7 @@
         </encoder>
     </appender>
 
-    <!-- log to both stdout and file -->
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />
     </root>
