@@ -1,0 +1,11 @@
+{                                        
+ "type":"record",                        
+ "name":"ODVS_CustomerRatings",          
+ "fields":[                              
+   {"name":"CId","type":"int"},          
+   {"name":"MovieID","type":"string"},   
+   {"name":"MovieName","type":"string"}, 
+   {"name":"CName","type":"string"},     
+   {"name":"MovieRating","type":"string"}
+  ]                                      
+}                                        

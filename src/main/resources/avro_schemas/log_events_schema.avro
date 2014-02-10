@@ -1,0 +1,17 @@
+{
+ "type":"record",
+ "name":"LogEvent",
+ "fields":[
+   {"name":"OriginatingIp","type":"string"},
+   {"name":"ClientIdentity","type":"string"},
+   {"name":"UserID","type":"string"},
+   {"name":"TimeStamp","type":"string"},
+   {"name":"RequestType","type":"string"},
+   {"name":"RequestPage","type":"string"},
+   {"name":"HTTPProtocolVersion","type":"string"},
+   {"name":"ResponseCode","type":"int"},
+   {"name":"ResponseSize","type":"int"},
+   {"name":"Referrer","type":"string"},
+   {"name":"UserAgent","type":"string"}
+  ]
+}

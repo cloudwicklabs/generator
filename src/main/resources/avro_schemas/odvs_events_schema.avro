@@ -1,0 +1,17 @@
+{                                              
+ "type":"record",                              
+ "name":"ODVS",                                
+ "fields":[                                    
+   {"name":"CId","type":"int"},                
+   {"name":"CName","type":"string"},           
+   {"name":"UserActive","type":"int"},         
+   {"name":"TimeStamp","type":"long"},         
+   {"name":"PauseTime","type":"long"},         
+   {"name":"MovieRating","type":"string"},     
+   {"name":"MovieID","type":"string"},         
+   {"name":"MovieName","type":"string"},       
+   {"name":"MovieReleaseDate","type":"string"},
+   {"name":"MovieLength","type":"int"},        
+   {"name":"MovieGenre","type":"string"}       
+  ]                                            
+}                                              

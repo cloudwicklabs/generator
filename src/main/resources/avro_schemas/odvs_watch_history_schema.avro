@@ -1,0 +1,11 @@
+{                                               
+ "type":"record",                               
+ "name":"ODVS_WatchHistory",                    
+ "fields":[                                     
+   {"name":"CId","type":"int"},                 
+   {"name":"CustomerTimeWatched","type":"long"},
+   {"name":"CustomerPausedTime","type":"long"}, 
+   {"name":"MovieID","type":"string"},          
+   {"name":"MovieName","type":"string"}         
+  ]                                             
+}                                               

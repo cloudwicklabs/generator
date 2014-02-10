@@ -1,0 +1,11 @@
+{                                              
+ "type":"record",                              
+ "name":"ODVS_MovieGenre",                     
+ "fields":[                                    
+   {"name":"MovieGenre","type":"string"},      
+   {"name":"MovieReleaseDate","type":"string"},
+   {"name":"MovieID","type":"string"},         
+   {"name":"MovieLength","type":"int"},        
+   {"name":"MovieName","type":"string"}        
+  ]                                            
+}                                              
