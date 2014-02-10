@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+SELF=`which "$0" 2> /dev/null`
+[ $? -gt 0 -a -f "$0" ] && SELF="./$0"
+
+VERSION=0.1
+
+JAR="target/scala-2.10/generator-assembly-${VERSION}.jar"
+
+if [ ! -f ${JAR} ]; then
+  echo "[Error]: Cannot find jar, compile using 'sbt assembly'"
+  echo "    This requires installing 'sbt'(version 0.13), use the following link"
+  echo "    to install sbt http://goo.gl/uVkvG"
+  exit 1
+fi
+
+function usage () {
+  echo "Usage: `basename $0` DRIVER"
+  echo "Supported GENERATOR(s)"
+  echo " [*] log       apache httpd logs generator"
+  echo " [*] odvs      on-demand video service provider data generator"
+  echo " [*] osge      online social gaming entertainment provider data generator"
+  echo " [*] cs        clickstream data generator"
+  exit 1
+}
+
+if [ $# -eq 0 ]; then
+  usage
+fi
+
+COMMAND=$1
+shift
+
+# Java Options
+JAVA=java
+if [ -n "${JAVA_HOME}" ]; then
+  JAVA="${JAVA_HOME}/bin/java"
+fi
+JAVA_HEAP_SIZE=-Xmx1000m
+
+if [[ "$COMMAND" = "log" ]]; then
+  CLASS="com.cloudwick.generator.logEvents.Driver"
+elif [[ "$COMMAND" = "odvs" ]]; then
+  CLASS="com.cloudwick.generator.odvs.Driver"
+elif [[ "$COMMAND" = "osge" ]]; then
+  CLASS="com.cloudwick.generator.osge.Driver"
+  echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
+elif [[ "$COMMAND" = "cs" ]]; then
+  CLASS="com.cloudwick.generator.cs.Driver"
+  echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
+else
+  usage
+fi
+
+exec "${JAVA}" ${java_args} -cp ${JAR} ${CLASS} "$@"
