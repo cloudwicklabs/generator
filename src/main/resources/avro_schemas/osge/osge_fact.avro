@@ -1,0 +1,9 @@
+{
+ "type":"record",
+ "name":"OSGE_Fact",
+ "fields":[
+   {"name":"CId","type":"string"},
+   {"name":"CGamePlayed","type":"string"},
+   {"name":"CGamePlayedDate","type":"long"}
+  ]
+}

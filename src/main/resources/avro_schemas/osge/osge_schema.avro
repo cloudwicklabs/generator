@@ -1,0 +1,22 @@
+{
+ "type":"record",
+ "name":"OSGE",
+ "fields":[
+   {"name":"CId","type":"string"},
+   {"name":"CName","type":"string"},
+   {"name":"CEmail","type":"string"},
+   {"name":"CGender","type":"string"},
+   {"name":"CAge","type":"int"},
+   {"name":"CAddress","type":"string"},
+   {"name":"CCountry","type":"string"},
+   {"name":"CRegisterDate","type":"long"},
+   {"name":"CFriendCount","type":"int"},
+   {"name":"CLifeTime","type":"int"},
+   {"name":"CityPlayedCount","type":"int"},
+   {"name":"PictionaryPlayedCount","type":"int"},
+   {"name":"ScramblePlayedCount","type":"int"},
+   {"name":"SniperPlayedCount","type":"int"},
+   {"name":"CRevenue","type":"int"},
+   {"name":"PaidSubscriber","type":"string"}
+  ]
+}

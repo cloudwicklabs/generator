@@ -1,0 +1,14 @@
+{
+ "type":"record",
+ "name":"OSGE_Customer",
+ "fields":[
+   {"name":"CId","type":"string"},
+   {"name":"CName","type":"string"},
+   {"name":"CGender","type":"string"},
+   {"name":"CAge","type":"int"},
+   {"name":"CRegisterDate","type":"long"},
+   {"name":"CCountry","type":"string"},
+   {"name":"CFriendCount","type":"int"},
+   {"name":"CLifeTime","type":"int"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+ "type":"record",
+ "name":"OSGE_Revenue",
+ "fields":[
+   {"name":"CId","type":"string"},
+   {"name":"CPaidDate","type":"long"},
+   {"name":"CRevenue","type":"int"}
+  ]
+}
