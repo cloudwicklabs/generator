@@ -8,6 +8,8 @@ import org.apache.avro.file.DataFileWriter
 import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
 import org.apache.avro.{file, Schema}
 import org.apache.avro.io.DatumWriter
+import java.util.Calendar
+import java.text.SimpleDateFormat
 
 /**
  * Set of utilities used in generating data
@@ -15,6 +17,7 @@ import org.apache.avro.io.DatumWriter
  */
 class Utils {
   private val logger = LoggerFactory.getLogger(getClass)
+  private val formatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
   /**
    * Picks an element out of map, following the weight as the probability
@@ -45,6 +48,25 @@ class Utils {
    */
   def randInt(min: Int, max: Int) = {
     Random.nextInt((max - min) + 1) + min
+  }
+
+  /**
+   * Generates random date between a given range of dates
+   * @param from date range from which to generate the date from, should be of the format
+   *             'dd-MMM-yy HH:mm:ss'
+   * @param to date range end, should be of the format 'dd-MMM-yy HH:mm:ss'
+   * @return a random date in milli seconds
+   */
+  def genDate(from: String, to: String) = {
+    val cal = Calendar.getInstance()
+    cal.setTime(formatter.parse(from))
+    val v1 = cal.getTimeInMillis
+    cal.setTime(formatter.parse(to))
+    val v2 = cal.getTimeInMillis
+
+    val diff: Long = (v1 + Math.random() * (v2 - v1)).toLong
+    cal.setTimeInMillis(diff)
+    cal.getTimeInMillis
   }
 
   /**

@@ -44,7 +44,6 @@ elif [[ "$COMMAND" = "odvs" ]]; then
   CLASS="com.cloudwick.generator.odvs.Driver"
 elif [[ "$COMMAND" = "osge" ]]; then
   CLASS="com.cloudwick.generator.osge.Driver"
-  echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
 elif [[ "$COMMAND" = "cs" ]]; then
   CLASS="com.cloudwick.generator.cs.Driver"
   echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
