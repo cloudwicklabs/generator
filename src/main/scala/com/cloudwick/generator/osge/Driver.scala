@@ -28,20 +28,17 @@ object Driver extends App {
       "\t where,\n" +
       "\t\ttsv - string formatted by tabs in between columns\n" +
       "\t\tcsv - string formatted by commas in between columns\n" +
-      "\t\tavro - string formatted using avro serialization\n" +
-      "\t\tseq - string formatted using sequence serialization"
+      "\t\tavro - string formatted using avro serialization\n"
+      //"\t\tseq - string formatted using sequence serialization"
     opt[Int]('s', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
-    } text "size of the file to roll, defaults to: Int.MaxValue (don't roll files)"
+    } text "size of the file to roll in bytes, defaults to: Int.MaxValue (don't roll files)"
     opt[String]('p', "filePath") action { (x, c) =>
       c.copy(filePath = x)
     } text "path of the file where the data should be generated, defaults to: '/tmp'"
     opt[Long]('e', "totalEvents") action { (x, c) =>
       c.copy(totalEvents = x)
     } text "total number of events to generate, default: 1000"
-    opt[Long]('c', "customersDataSetSize") action { (x, c) =>
-      c.copy(customerDataSetSize = x)
-    } text "total number of customers data set to build, default: 100000L"
     opt[Unit]('m', "multiTable") action { (_, c) =>
       c.copy(multiTable = true)
     } text "generate data as multi tables format, default: false"

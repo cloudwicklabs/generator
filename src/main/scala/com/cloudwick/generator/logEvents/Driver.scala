@@ -27,11 +27,11 @@ object Driver extends App {
     } text "format of the string to write to the file defaults to: 'tsv'\n" +
       "\t where,\n" +
       "\t\ttext - string formatted by tabs in between columns\n" +
-      "\t\tavro - string formatted using avro serialization\n" +
-      "\t\tseq - string formatted using sequence serialization"
+      "\t\tavro - string formatted using avro serialization\n"
+      //"\t\tseq - string formatted using sequence serialization"
     opt[Int]('s', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
-    } text "size of the file to roll, defaults to: Int.MaxValue (don't roll files)"
+    } text "size of the file to roll in bytes, defaults to: Int.MaxValue (don't roll files)"
     opt[String]('p', "filePath") action { (x, c) =>
       c.copy(filePath = x)
     } text "path of the file where the data should be generated, defaults to: '/tmp'"
