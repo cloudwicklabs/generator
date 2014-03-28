@@ -5,7 +5,7 @@ package com.cloudwick.generator.logEvents
  * @author ashrith
  */
 case class OptionsConfig(
-  eventsPerSec: Int = 1,
+  eventsPerSec: Int = 0,
   fileFormat: String = "string",
   filePath: String = "/tmp",
   fileRollSize: Int = Int.MaxValue, // in bytes

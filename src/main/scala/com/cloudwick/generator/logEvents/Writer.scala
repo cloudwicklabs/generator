@@ -88,7 +88,9 @@ class Writer(eventsStartRange: Int,
         fileHandlerText = new FileHandler(outputFile, config.fileRollSize)
         fileHandlerText.openFile()
       }
+      // Start generating
       (eventsStartRange to eventsEndRange).foreach { eventCount =>
+        Thread.sleep(sleepTime)
         batchCount += 1
         logEvent = logEventGenerator.eventGenerate
         sizeCounter.getAndAdd(logEvent.toString.getBytes.length)
