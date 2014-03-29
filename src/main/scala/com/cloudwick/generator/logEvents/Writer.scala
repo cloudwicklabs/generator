@@ -47,7 +47,7 @@ class Writer(eventsStartRange: Int,
   def threadName = Thread.currentThread().getName
 
   def formatEventToString(logEvent: LogEvent) = {
-    s"${logEvent.ip} - - [${logEvent.timestamp}]" + " \"GET " + logEvent.request + " HTTP/1.1\" +" +
+    s"${logEvent.ip} - - [${logEvent.timestamp}]" + " \"GET " + logEvent.request + " HTTP/1.1\"" +
     s" ${logEvent.responseCode} ${logEvent.responseSize} " + "\"-\" \"" + logEvent.userAgent + "\"\n"
   }
 
