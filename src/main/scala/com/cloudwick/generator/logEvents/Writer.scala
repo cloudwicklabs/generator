@@ -2,7 +2,7 @@ package com.cloudwick.generator.logEvents
 
 import java.util.concurrent.atomic.AtomicLong
 import org.slf4j.LoggerFactory
-import com.cloudwick.generator.utils.{AvroFileHandler, FileHandler, Utils}
+import com.cloudwick.generator.utils._
 import scala.collection.mutable.ArrayBuffer
 import org.apache.avro.generic.{GenericData, GenericRecord}
 import org.apache.avro.Schema
@@ -74,6 +74,8 @@ class Writer(eventsStartRange: Int,
     val outputFile = new File(config.filePath, s"mock_apache_${threadName}.data").toString
     var fileHandlerText: FileHandler = null
     var fileHandlerAvro: AvroFileHandler = null
+    var kafkaHandler: KafkaHandler = null
+    var kafkaAvroHandler: KafkaAvroHandler = null
     var eventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
     var eventsText  = new ArrayBuffer[String](config.flushBatch)
     val ipGenerator = new IPGenerator(config.ipSessionCount, config.ipSessionLength)
@@ -81,12 +83,21 @@ class Writer(eventsStartRange: Int,
     var logEvent: LogEvent = null
 
     try {
-      if (config.fileFormat == "avro") {
-        fileHandlerAvro = new AvroFileHandler(outputFile, schemaDesc, config.fileRollSize)
-        fileHandlerAvro.openFile()
-      } else {
-        fileHandlerText = new FileHandler(outputFile, config.fileRollSize)
-        fileHandlerText.openFile()
+      if (config.destination == "file") {
+        if (config.outputFormat == "avro") {
+          fileHandlerAvro = new AvroFileHandler(outputFile, schemaDesc, config.fileRollSize)
+          fileHandlerAvro.openFile()
+        } else {
+          fileHandlerText = new FileHandler(outputFile, config.fileRollSize)
+          fileHandlerText.openFile()
+        }
+      }
+      else {
+        if (config.outputFormat == "avro") {
+          kafkaAvroHandler = new KafkaAvroHandler(config.kafkaBrokerList, schemaDesc, config.kafkaTopicName)
+        } else {
+          kafkaHandler = new KafkaHandler(config.kafkaBrokerList, config.kafkaTopicName)
+        }
       }
       // Start generating
       (eventsStartRange to eventsEndRange).foreach { eventCount =>
@@ -94,19 +105,30 @@ class Writer(eventsStartRange: Int,
         batchCount += 1
         logEvent = logEventGenerator.eventGenerate
         sizeCounter.getAndAdd(logEvent.toString.getBytes.length)
-        if (config.fileFormat == "avro") {
+        if (config.outputFormat == "avro") {
           eventsAvro += avroEvent(logEvent)
         } else {
           eventsText += formatEventToString(logEvent)
         }
         counter.getAndIncrement
         if (batchCount == config.flushBatch || batchCount == totalEvents) {
-          if (config.fileFormat == "avro") {
-            fileHandlerAvro.publishBuffered(eventsAvro)
-            eventsAvro.clear()
-          } else {
-            fileHandlerText.publishBuffered(eventsText)
-            eventsText.clear()
+          if (config.destination == "file") {
+            if (config.outputFormat == "avro") {
+              fileHandlerAvro.publishBuffered(eventsAvro)
+              eventsAvro.clear()
+            } else {
+              fileHandlerText.publishBuffered(eventsText)
+              eventsText.clear()
+            }
+          }
+          else {
+            if (config.outputFormat == "avro") {
+              kafkaAvroHandler.publishBuffered(eventsAvro)
+              eventsAvro.clear()
+            } else {
+              kafkaHandler.publishBuffered(eventsText)
+              eventsText.clear()
+            }
           }
           batchCount = 0
         }
@@ -118,10 +140,18 @@ class Writer(eventsStartRange: Int,
       }
     }
     finally {
-      if (config.fileFormat == "avro") {
-        fileHandlerAvro.close()
+      if (config.destination == "file") {
+        if (config.outputFormat == "avro") {
+          fileHandlerAvro.close()
+        } else {
+          fileHandlerText.close()
+        }
       } else {
-        fileHandlerText.close()
+        if (config.outputFormat == "avro") {
+          kafkaAvroHandler.close()
+        } else {
+          kafkaHandler.close()
+        }
       }
     }
   }

@@ -17,24 +17,38 @@ object Driver extends App {
     opt[Int]("eventsPerSec") action { (x, c) =>
       c.copy(eventsPerSec = x)
     } text "number of log events to generate per sec, use this to throttle the generator"
-    opt[String]('f', "fileFormat") action { (x, c) =>
-      c.copy(fileFormat = x)
+    opt[String]('o', "outputFormat") action { (x, c) =>
+      c.copy(outputFormat = x)
     } validate { x: String =>
       if (x == "text" || x == "avro" || x == "seq")
         success
       else
-        failure("supported file format's: string, avro, seq'")
+        failure("supported output format's: string, avro, seq'")
     } text "format of the string to write to the file defaults to: 'tsv'\n" +
       "\t where,\n" +
       "\t\ttext - string formatted by tabs in between columns\n" +
       "\t\tavro - string formatted using avro serialization\n"
       //"\t\tseq - string formatted using sequence serialization"
+    opt[String]('d', "destination") action { (x, c) =>
+      c.copy(destination = x)
+    } validate { x: String =>
+      if (x == "file" || x == "kafka")
+        success
+      else
+        failure("supported destination formats are: file, kafka")
+    } text "destination where the generator writes data to, defaults to: 'file'"
     opt[Int]('s', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
     } text "size of the file to roll in bytes, defaults to: Int.MaxValue (don't roll files)"
     opt[String]('p', "filePath") action { (x, c) =>
       c.copy(filePath = x)
     } text "path of the file where the data should be generated, defaults to: '/tmp'"
+    opt[String]('k', "kafkaBrokerList") action { (x, c) =>
+      c.copy(kafkaBrokerList = x)
+    } text "list of kafka brokers to write to, defaults to: 'localhost:9092'"
+    opt[String]('q', "kafkaTopicName") action { (x, c) =>
+      c.copy(kafkaTopicName = x)
+    } text "name of the kafka topic to write data to, defaults to: 'logs'"
     opt[Long]('e', "totalEvents") action { (x, c) =>
       c.copy(totalEvents = x)
     } text "total number of events to generate, default: 1000"
@@ -57,9 +71,12 @@ object Driver extends App {
   }
 
   optionsParser.parse(args, OptionsConfig()) map { config =>
-    logger.info(s"Successfully parsed command line args : $config")
-
+    logger.info(s"Successfully parsed command line args")
+    config.getClass.getDeclaredFields.map(_.getName).zip( config.productIterator.to ).toMap.foreach { configElements =>
+      logger.info("Configuration element '{}' = '{}'", configElements._1, configElements._2)
+    }
     try {
+      logger.info("Initializing generator ...")
       new ConcurrentWriter(config.totalEvents, config).run()
     } catch {
       case e: Exception => logger.error("Error : {}", e.fillInStackTrace())

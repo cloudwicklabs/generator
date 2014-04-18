@@ -6,7 +6,10 @@ package com.cloudwick.generator.logEvents
  */
 case class OptionsConfig(
   eventsPerSec: Int = 0,
-  fileFormat: String = "string",
+  destination: String = "file",
+  kafkaBrokerList: String = "localhost:9092",
+  kafkaTopicName: String = "logs",
+  outputFormat: String = "string",
   filePath: String = "/tmp",
   fileRollSize: Int = Int.MaxValue, // in bytes
   totalEvents: Long = 1000,

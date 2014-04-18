@@ -21,7 +21,13 @@ object Build extends Build {
       "org.apache.avro" % "avro" % "1.7.6",
       "commons-lang" % "commons-lang" % "2.6",
       "org.apache.commons" % "commons-math" % "2.2",
-      "org.apache.commons" % "commons-io" % "1.3.2"
+      "org.apache.commons" % "commons-io" % "1.3.2",
+      "org.apache.kafka" %% "kafka" % "0.8.0"
+        exclude("com.sun.jdmk", "jmxtools")
+        exclude("com.sun.jmx", "jmxri")
+        excludeAll(ExclusionRule(organization = "org.slf4j"))
+        exclude("org.slf4j", "slf4j-log4j12"),
+      "org.apache.zookeeper" % "zookeeper" % "3.4.6" intransitive() excludeAll(ExclusionRule(organization = "org.slf4j"))
     )
 
     val testDependencies = Seq(
