@@ -15,11 +15,10 @@ This project requires [sbt](http://www.scala-sbt.org/), installation instruction
 Once, sbt is installed use the `assembly` sbt task from the project path to build the jar with dependencies
 
 ```
+git clone https://github.com/cloudwicklabs/generator.git
+cd generator
 sbt assembly
 ```
-
-###Download `fat-jar`
-You, can directly download the fat-jar and use instead of building from source
 
 ###Running the generator
 Use the built in shell wrapper to fire up the generator
