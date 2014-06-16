@@ -36,7 +36,10 @@ object Driver extends App {
         success
       else
         failure("supported destination formats are: file, kafka")
-    } text "destination where the generator writes data to, defaults to: 'file'"
+    } text "destination where the generator writes data to, defaults to: 'file'\n" +
+      "\t where,\n" +
+      "\t\file - output's directly to flat files\n" +
+      "\t\tkafka - output to specified kafka topic\n"
     opt[Int]('s', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
     } text "size of the file to roll in bytes, defaults to: Int.MaxValue (don't roll files)"
