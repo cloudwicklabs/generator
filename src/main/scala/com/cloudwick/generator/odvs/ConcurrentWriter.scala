@@ -1,9 +1,11 @@
 package com.cloudwick.generator.odvs
 
+import java.io.File
+
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{Executors, ExecutorService}
 import java.util.concurrent.atomic.AtomicLong
-import com.cloudwick.generator.utils.Utils
+import com.cloudwick.generator.utils.{FileHandler, Utils}
 
 /**
  * Writer which can handle concurrency
@@ -21,15 +23,33 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
   val person = new Person
 
   def buildCustomersMap = {
-    logger.debug("Building a customer data set of size: {}", config.customerDataSetSize)
+    logger.info("Building a customer data set of size: {}", config.customerDataSetSize)
     (1L to config.customerDataSetSize).foreach { custId =>
       customers += custId -> person.gen
     }
     customers.toMap
   }
 
+  def writeCustomersMap (customersMap: Map[Long, String]) = {
+    val formatChar = config.fileFormat match {
+      case "tsv" => '\t'
+      case "csv" => ','
+      case _ => '\t'
+    }
+    var outputFileWatchHistoryHandler: FileHandler = null;
+    try {
+      outputFileWatchHistoryHandler = new FileHandler(new File(config.filePath, "odvs_customers.data").toString, config.fileRollSize)
+      customersMap.foreach { cm =>
+        outputFileWatchHistoryHandler.publish("%d%c%s\n".format(cm._1, formatChar, cm._2))
+      }
+    } finally {
+      outputFileWatchHistoryHandler.close()
+    }
+  }
+
   def run() = {
     utils.time(s"Generating $totalEvents events") {
+      val cusomtersData: Map[Long, String] = buildCustomersMap;
       try {
         (1 to config.threadsCount).foreach { threadCount =>
           logger.debug("Initializing thread: {}", threadCount)
@@ -37,7 +57,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
             new Writer(
               messagesRange(threadCount-1),
               messagesRange(threadCount-1) + (messagesPerThread-1),
-              buildCustomersMap,
+              cusomtersData,
               finalCounter,
               finalBytesCounter,
               config
@@ -53,6 +73,8 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
         Thread.sleep(10 * 1000)
         logger.info("Events generated: {}, size: '{}' bytes", finalCounter, finalBytesCounter.longValue())
       }
+      if (config.dumpCustomers)
+        writeCustomersMap(cusomtersData)
       logger.info("Total documents processed by {} thread(s): {}", config.threadsCount, finalCounter)
     }
   }

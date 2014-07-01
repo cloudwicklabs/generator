@@ -45,6 +45,9 @@ object Driver extends App {
     opt[Unit]('m', "multiTable") action { (_, c) =>
       c.copy(multiTable = true)
     } text "generate data as multi tables format, default: false"
+    opt[Unit]('d', "dumpCustomers") action { (x, c) =>
+      c.copy(dumpCustomers =  true)
+    } text "whether to dump customers to a file"
     opt[Int]('b', "flushBatch") action { (x, c) =>
       c.copy(flushBatch = x)
     } text "number of events to flush to file at a single time, defaults to: 10000"
