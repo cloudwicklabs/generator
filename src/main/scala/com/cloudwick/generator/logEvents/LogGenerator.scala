@@ -1,5 +1,7 @@
 package com.cloudwick.generator.logEvents
 
+import java.text.SimpleDateFormat
+
 import scala.util.Random
 import com.cloudwick.generator.utils.Utils
 
@@ -8,8 +10,9 @@ import com.cloudwick.generator.utils.Utils
  * @constructor creates a new logGenerator
  * @author ashrith
  */
-class LogGenerator(var ipGenerator:IPGenerator) {
+class LogGenerator(val ipGenerator:IPGenerator) {
   val utils = new Utils
+  val format = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z")
 
   val RESPONSE_CODES = Map(
     "200" -> 92,
@@ -36,7 +39,6 @@ class LogGenerator(var ipGenerator:IPGenerator) {
   )
 
   def eventGenerate = {
-    val format = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
     val date = format.format(new java.util.Date())
     new LogEvent(
       ipGenerator.get_ip,
