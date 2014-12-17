@@ -2,10 +2,11 @@ import sbt._
 import Keys._
 
 object Build extends Build {
-  val ScalaVersion = "2.10.3"
+  // Can't upgrade to 2.11.x yet as kafka still depends on 2.10.x
+  val ScalaVersion = "2.10.4"
 
   lazy val root = Project("generator", file(".")) settings(
-      version := "0.1",
+      version := "0.5",
       scalaVersion := ScalaVersion,
       organization := "com.cloudwick",
       scalacOptions ++= Seq("-unchecked", "-deprecation"),
@@ -16,8 +17,8 @@ object Build extends Build {
 
   object Dependencies {
     val compile = Seq(
-      "ch.qos.logback" % "logback-classic" % "1.0.13",
-      "com.github.scopt" %% "scopt" % "3.1.0",
+      "ch.qos.logback" % "logback-classic" % "1.1.2",
+      "com.github.scopt" %% "scopt" % "3.3.0",
       "org.apache.avro" % "avro" % "1.7.6",
       "commons-lang" % "commons-lang" % "2.6",
       "org.apache.commons" % "commons-math" % "2.2",
@@ -25,15 +26,14 @@ object Build extends Build {
       "org.apache.kafka" %% "kafka" % "0.8.0"
         exclude("com.sun.jdmk", "jmxtools")
         exclude("com.sun.jmx", "jmxri")
-        excludeAll(ExclusionRule(organization = "org.slf4j"))
+        excludeAll ExclusionRule(organization = "org.slf4j")
         exclude("org.slf4j", "slf4j-log4j12"),
-      "org.apache.zookeeper" % "zookeeper" % "3.4.6" intransitive() excludeAll(ExclusionRule(organization = "org.slf4j"))
+      "org.apache.zookeeper" % "zookeeper" % "3.4.6" intransitive() excludeAll ExclusionRule(organization = "org.slf4j")
     )
 
     val testDependencies = Seq(
-      "org.specs2" %% "specs2" % "1.14" % "test",
-      "org.mockito" % "mockito-all" % "1.9.0" % "test",
-      "org.hamcrest" % "hamcrest-all" % "1.1" % "test"
+      "org.scalatest" %% "scalatest" % "1.9.1" % "test",
+      "org.scalamock" %% "scalamock-scalatest-support" % "3.2" % "test"
     )
 
     val resolvers = Seq(
