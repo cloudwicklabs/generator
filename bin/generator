@@ -9,7 +9,7 @@ JAR="target/scala-2.10/generator-assembly-${VERSION}.jar"
 
 if [ ! -f ${JAR} ]; then
   echo "[Error]: Cannot find jar, generate using 'sbt assembly'"
-  echo "    This requires installing 'sbt'(version 0.13), use the following link"
+  echo "    This requires installing 'sbt'(version 0.13.6 +), use the following link"
   echo "    to install sbt http://goo.gl/uVkvG"
   exit 1
 fi
