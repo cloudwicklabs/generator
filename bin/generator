@@ -3,12 +3,12 @@
 SELF=`which "$0" 2> /dev/null`
 [ $? -gt 0 -a -f "$0" ] && SELF="./$0"
 
-VERSION=0.1
+VERSION=0.5
 
 JAR="target/scala-2.10/generator-assembly-${VERSION}.jar"
 
 if [ ! -f ${JAR} ]; then
-  echo "[Error]: Cannot find jar, compile using 'sbt assembly'"
+  echo "[Error]: Cannot find jar, generate using 'sbt assembly'"
   echo "    This requires installing 'sbt'(version 0.13), use the following link"
   echo "    to install sbt http://goo.gl/uVkvG"
   exit 1
