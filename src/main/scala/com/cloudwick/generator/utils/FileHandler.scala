@@ -15,16 +15,23 @@ class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: B
   private var openTime: Long = 0
   private var bytesWrittenToFile: Long = 0
 
+  // Roll the file if it exists, else open a new file
   if (new File(fileName).exists()) {
     roll()
   } else {
     openFile()
   }
 
+  /**
+   * Flush the file stream
+   */
   def flush() = {
     stream.flush()
   }
 
+  /**
+   * Close file stream, flushes the stream before closing it.
+   */
   def close() = {
     flush()
     try {
@@ -38,6 +45,10 @@ class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: B
     dateFormat.format(new java.util.Date)
   }
 
+  /**
+   * Opens a new file, attempts to create parent directory if does not exists. Also, initializes `openTime` &
+   * `bytesWrittenToFile`
+   */
   def openFile() = {
     logger.debug("Attempting to open the file {}", fileName)
     val dir = new File(fileName).getParentFile
@@ -47,6 +58,9 @@ class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: B
     bytesWrittenToFile = 0
   }
 
+  /**
+   * Roll's an open file & creates a new file
+   */
   def roll() = synchronized {
     logger.debug("Attempting to roll file")
     if (stream ne null) stream.close()
@@ -60,6 +74,10 @@ class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: B
     openFile()
   }
 
+  /**
+   * Writes a supplied `record` to the file, this method is thread-safe
+   * @param record Record to write to the open file
+   */
   def publish(record: String) = {
     try {
       val lineSizeBytes = record.getBytes("UTF-8").length
@@ -76,6 +94,10 @@ class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: B
     }
   }
 
+  /**
+   * Writes a supplied set of `records` to the file, this method is thread-safe
+   * @param records Array of records to write to open file
+   */
   def publishBuffered(records: ArrayBuffer[String]) = {
     var lineSizeBytes: Int = 0
     try {

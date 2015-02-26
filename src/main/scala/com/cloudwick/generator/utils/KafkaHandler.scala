@@ -1,10 +1,11 @@
 package com.cloudwick.generator.utils
 
-import org.slf4j.LoggerFactory
 import java.util.Properties
-import kafka.producer.{KeyedMessage, ProducerConfig, Producer}
+
+import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.slf4j.LoggerFactory
+
 import scala.collection.mutable.ArrayBuffer
-import org.apache.avro.generic.GenericRecord
 
 /**
  * Kafka handler to write data to handler

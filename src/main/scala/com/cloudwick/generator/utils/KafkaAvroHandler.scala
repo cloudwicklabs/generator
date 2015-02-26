@@ -1,19 +1,18 @@
 package com.cloudwick.generator.utils
 
-import org.slf4j.LoggerFactory
-import java.util.Properties
-import kafka.producer.{KeyedMessage, ProducerConfig, Producer}
-import org.apache.avro.generic.GenericRecord
-import kafka.message.Message
 import java.io.ByteArrayOutputStream
-import org.apache.avro.io.{EncoderFactory, BinaryEncoder}
-import org.apache.avro.specific.SpecificDatumWriter
-import org.apache.commons.io.IOUtils
-import scala.collection.mutable.ArrayBuffer
-import org.apache.avro.Schema
-import org.apache.avro.io.Encoder
-import org.apache.avro.io.DatumWriter
 import java.nio.ByteBuffer
+import java.util.Properties
+
+import kafka.message.Message
+import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
+import org.apache.avro.Schema
+import org.apache.avro.generic.GenericRecord
+import org.apache.avro.io.{DatumWriter, Encoder, EncoderFactory}
+import org.apache.avro.specific.SpecificDatumWriter
+import org.slf4j.LoggerFactory
+
+import scala.collection.mutable.ArrayBuffer
 
 //import com.cloudwick.generator.model.LogEvent
 

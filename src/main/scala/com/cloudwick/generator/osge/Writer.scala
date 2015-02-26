@@ -22,7 +22,6 @@ class Writer(eventsStartRange: Int,
              config: OptionsConfig) extends Runnable {
   lazy val logger = LoggerFactory.getLogger(getClass)
   lazy val utils = new Utils
-  lazy val fileUtils = new utils.FileUtils
   lazy val schemaLine =
   """
     |{

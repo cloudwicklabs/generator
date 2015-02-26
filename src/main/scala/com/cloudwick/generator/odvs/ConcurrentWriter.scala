@@ -49,7 +49,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
 
   def run() = {
     utils.time(s"Generating $totalEvents events") {
-      val cusomtersData: Map[Long, String] = buildCustomersMap;
+      val customersData: Map[Long, String] = buildCustomersMap;
       try {
         (1 to config.threadsCount).foreach { threadCount =>
           logger.debug("Initializing thread: {}", threadCount)
@@ -57,7 +57,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
             new Writer(
               messagesRange(threadCount-1),
               messagesRange(threadCount-1) + (messagesPerThread-1),
-              cusomtersData,
+              customersData,
               finalCounter,
               finalBytesCounter,
               config
@@ -74,7 +74,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
         logger.info("Events generated: {}, size: '{}' bytes", finalCounter, finalBytesCounter.longValue())
       }
       if (config.dumpCustomers)
-        writeCustomersMap(cusomtersData)
+        writeCustomersMap(customersData)
       logger.info("Total documents processed by {} thread(s): {}", config.threadsCount, finalCounter)
     }
   }
