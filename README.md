@@ -36,7 +36,7 @@ All the data generators have a driver command line interface, following links sh
 * [OSGE generator](https://github.com/cloudwicklabs/generator/wiki/OSGE-Generator-Driver)
 
 ###Feedback
-For more generators, your specific use-cases or to leave feedback contact [support](mailto:support@cloudwicklabs.com)
+For more generators, your specific use-cases or to leave feedback contact [support](mailto:support@cloudwick.com)
 
 ###License and Authors
 
