@@ -1,14 +1,16 @@
 package com.cloudwick.generator.odvs
 
+import scala.io.Source
 import scala.util.Random
 import com.cloudwick.generator.utils._
+import scala.io
 
 /**
  * Mocks online customer interaction for on-demand video service provider
  * @author ashrith
  */
 class MovieGenerator {
-  val movieTitles = io.Source.fromURL(getClass.getResource("/movie_titles.csv"))
+  val movieTitles = Source.fromURL(getClass.getResource("/movie_titles.csv"))
   val data = parseToMap(movieTitles.getLines())
   val random = Random
   val utils = new Utils
