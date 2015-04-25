@@ -3,14 +3,13 @@ package com.cloudwick.generator.logEvents
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{Executors, ExecutorService}
 import java.util.concurrent.atomic.AtomicLong
-import com.cloudwick.generator.utils.Utils
+import com.cloudwick.generator.utils.{LazyLogging, Utils}
 
 /**
  * Writer which can handle concurrency
  * @author ashrith 
  */
-class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable with LazyLogging {
   val utils = new Utils
   val threadPool: ExecutorService = Executors.newFixedThreadPool(config.threadPoolSize)
   val finalCounter: AtomicLong = new AtomicLong(0L)
@@ -22,7 +21,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
     utils.time(s"Generating $totalEvents events") {
       try {
         (1 to config.threadsCount).foreach { threadCount =>
-          // logger.debug("Initializing thread: {}", Thread.currentThread().getName)
+          logger.debug("Initializing thread: '{}'", Thread.currentThread().getName)
           threadPool.execute(
             new Writer(
               messagesRange(threadCount-1),
@@ -41,6 +40,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
       while(!threadPool.isTerminated) {
         // send the main thread to sleep for every 10 seconds, so that we'll get a aggregated count
         // of events every 10 seconds
+        logger.trace("Sleeping for 10 seconds ...")
         Thread.sleep(10 * 1000)
         logger.info("Events generated: {}, size: '{}' bytes", finalCounter, finalBytesCounter.longValue())
       }

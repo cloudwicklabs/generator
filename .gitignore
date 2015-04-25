@@ -1,6 +1,7 @@
 *.class
 *.log
 wiki
+Random.scala
 
 # sbt specific
 dist/*

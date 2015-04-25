@@ -1,19 +1,37 @@
 import sbt._
 import Keys._
+import sbtassembly.{MergeStrategy, PathList, AssemblyKeys}
+import AssemblyKeys._
 
 object Build extends Build {
   // Can't upgrade to 2.11.x yet as kafka still depends on 2.10.x
   val ScalaVersion = "2.10.4"
 
-  lazy val root = Project("generator", file(".")) settings(
-      version := "0.5",
-      scalaVersion := ScalaVersion,
-      organization := "com.cloudwick",
-      scalacOptions ++= Seq("-unchecked", "-deprecation"),
-      libraryDependencies ++= Dependencies.compile,
-      libraryDependencies ++= Dependencies.testDependencies,
-      resolvers ++= Dependencies.resolvers
-    )
+  lazy val commonSettings = Seq(
+    version := "0.5",
+    scalaVersion := ScalaVersion,
+    organization := "com.cloudwick",
+    scalacOptions ++= Seq("-unchecked", "-deprecation")
+  )
+
+  lazy val assemblySettings = Seq(
+    test in assembly := {},
+    assemblyMergeStrategy in assembly := {
+      case PathList("javax", "servlet", xs @ _*)                => MergeStrategy.first
+      case PathList(ps @ _*) if ps.last endsWith ".html"        => MergeStrategy.first
+      case "application.conf"                                   => MergeStrategy.concat
+      case ".gitkeep"                                           => MergeStrategy.first
+      case x =>
+        val oldStrategy = (assemblyMergeStrategy in assembly).value
+        oldStrategy(x)
+    }
+  )
+
+  lazy val root = Project("generator", file("."), settings = commonSettings ++ assemblySettings) settings(
+    libraryDependencies ++= Dependencies.compile,
+    libraryDependencies ++= Dependencies.testDependencies,
+    resolvers ++= Dependencies.resolvers
+  )
 
   object Dependencies {
     val compile = Seq(
@@ -32,7 +50,9 @@ object Build extends Build {
         exclude("javax.jms", "jms")
         exclude("com.sun.jdmk", "jmxtools")
         exclude("com.sun.jmx", "jmxri")
-        excludeAll ExclusionRule(organization = "org.slf4j")
+        excludeAll ExclusionRule(organization = "org.slf4j"),
+      "io.github.cloudify" %% "scalazon" % "0.11",
+      "com.amazonaws" % "amazon-kinesis-client" % "1.0.0"
     )
 
     val testDependencies = Seq(
@@ -41,7 +61,9 @@ object Build extends Build {
     )
 
     val resolvers = Seq(
-      "amateras-repo" at "http://amateras.sourceforge.jp/mvn/"
+      "amateras-repo" at "http://amateras.sourceforge.jp/mvn/",
+      // For scalazon
+      "BintrayJCenter" at "http://jcenter.bintray.com"
     )
   }
 }

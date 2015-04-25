@@ -48,7 +48,8 @@ class Writer(eventsStartRange: Int,
 
   def formatEventToString(logEvent: LogEvent) = {
     s"${logEvent.ip} - - [${logEvent.timestamp}]" + " \"GET " + logEvent.request + " HTTP/1.1\"" +
-    s" ${logEvent.responseCode} ${logEvent.responseSize} " + "\"-\" \"" + logEvent.userAgent + "\"\n"
+    s" ${logEvent.responseCode} ${logEvent.responseSize} " +
+      "\"-\" \"" + logEvent.userAgent + "\"\n"
   }
 
   def avroEvent(event: LogEvent) = {
@@ -76,13 +77,17 @@ class Writer(eventsStartRange: Int,
     var fileHandlerAvro: AvroFileHandler = null
     var kafkaHandler: KafkaHandler = null
     var kafkaAvroHandler: KafkaAvroHandler = null
+    var kinesisHandler: KinesisHandler = null
     var eventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
     var eventsText  = new ArrayBuffer[String](config.flushBatch)
     val ipGenerator = new IPGenerator(config.ipSessionCount, config.ipSessionLength)
     val logEventGenerator = new LogGenerator(ipGenerator)
     var logEvent: LogEvent = null
 
-    logger.debug("Initializing thread: {}", threadName)
+    logger.debug("Initializing thread: {} ({} - {})",
+      threadName,
+      eventsStartRange.toString,
+      eventsEndRange.toString)
 
     try {
       if (config.destination == "file") {
@@ -94,12 +99,17 @@ class Writer(eventsStartRange: Int,
           fileHandlerText.openFile()
         }
       }
-      else {
+      else if (config.destination == "kafka") {
         if (config.outputFormat == "avro") {
           kafkaAvroHandler = new KafkaAvroHandler(config.kafkaBrokerList, schemaDesc, config.kafkaTopicName)
         } else {
           kafkaHandler = new KafkaHandler(config.kafkaBrokerList, config.kafkaTopicName)
         }
+      } else {
+        kinesisHandler = new KinesisHandler(
+          Credentials(config.awsAccessKey, config.awsSecretKey, config.awsEndPoint)
+        )
+        kinesisHandler.createStream(config.kinesisStreamName, config.kinesisShardCount, 60, 60)
       }
       // Start generating
       (eventsStartRange to eventsEndRange).foreach { eventCount =>
@@ -122,8 +132,7 @@ class Writer(eventsStartRange: Int,
               fileHandlerText.publishBuffered(eventsText)
               eventsText.clear()
             }
-          }
-          else {
+          } else if (config.destination == "kafka") {
             if (config.outputFormat == "avro") {
               kafkaAvroHandler.publishBuffered(eventsAvro)
               eventsAvro.clear()
@@ -131,6 +140,9 @@ class Writer(eventsStartRange: Int,
               kafkaHandler.publishBuffered(eventsText)
               eventsText.clear()
             }
+          } else {
+            kinesisHandler.publishBuffered(eventsText)
+            eventsText.clear()
           }
           batchCount = 0
         }
@@ -147,7 +159,7 @@ class Writer(eventsStartRange: Int,
         } else {
           fileHandlerText.close()
         }
-      } else {
+      } else if (config.destination == "kafka") {
         if (config.outputFormat == "avro") {
           kafkaAvroHandler.close()
         } else {
