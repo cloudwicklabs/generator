@@ -3,16 +3,13 @@ package com.cloudwick.generator.utils
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-import org.slf4j.LoggerFactory
-
 import scala.util.Random
 
 /**
  * Set of utilities used in generating data
  * @author ashrith
  */
-class Utils {
-  private val logger = LoggerFactory.getLogger(getClass)
+class Utils extends LazyLogging {
   private val formatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
   /**

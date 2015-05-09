@@ -8,14 +8,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 trait Handler {
   /**
-   * Publish/persist a single record to the specified external system
-   * @param record A record to persist
+   * Closes the stream
    */
-  def publishRecord(record: String)
-
-  /**
-   * Publish/persist a multiple record to the specified external system
-   * @param records Collection for records
-   */
-  def publishBuffered(records: ArrayBuffer[String])
+  def close()
 }

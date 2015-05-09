@@ -1,6 +1,7 @@
 {
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",
- "name":"OSGE_Fact",
+ "name":"Fact",
  "fields":[
    {"name":"CId","type":"string"},
    {"name":"CGamePlayed","type":"string"},

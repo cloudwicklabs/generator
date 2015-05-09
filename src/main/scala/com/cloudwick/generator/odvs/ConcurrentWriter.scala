@@ -5,14 +5,13 @@ import java.io.File
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{Executors, ExecutorService}
 import java.util.concurrent.atomic.AtomicLong
-import com.cloudwick.generator.utils.{FileHandler, Utils}
+import com.cloudwick.generator.utils.{LazyLogging, FileHandler, Utils}
 
 /**
  * Writer which can handle concurrency
  * @author ashrith 
  */
-class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable with LazyLogging {
   val utils = new Utils
   val threadPool: ExecutorService = Executors.newFixedThreadPool(config.threadPoolSize)
   val finalCounter: AtomicLong = new AtomicLong(0L)
@@ -31,12 +30,12 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
   }
 
   def writeCustomersMap (customersMap: Map[Long, String]) = {
-    val formatChar = config.fileFormat match {
+    val formatChar = config.outputFormat match {
       case "tsv" => '\t'
       case "csv" => ','
       case _ => '\t'
     }
-    var outputFileWatchHistoryHandler: FileHandler = null;
+    var outputFileWatchHistoryHandler: FileHandler = null
     try {
       outputFileWatchHistoryHandler = new FileHandler(new File(config.filePath, "odvs_customers.data").toString, config.fileRollSize)
       customersMap.foreach { cm =>
@@ -49,7 +48,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
 
   def run() = {
     utils.time(s"Generating $totalEvents events") {
-      val customersData: Map[Long, String] = buildCustomersMap;
+      val customersData: Map[Long, String] = buildCustomersMap
       try {
         (1 to config.threadsCount).foreach { threadCount =>
           logger.debug("Initializing thread: {}", threadCount)
@@ -70,11 +69,13 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
         threadPool.shutdown()
       }
       while(!threadPool.isTerminated) {
+        logger.trace("Sleeping for 10 seconds ...")
         Thread.sleep(10 * 1000)
         logger.info("Events generated: {}, size: '{}' bytes", finalCounter, finalBytesCounter.longValue())
       }
-      if (config.dumpCustomers)
+      if (config.dumpCustomers) {
         writeCustomersMap(customersData)
+      }
       logger.info("Total documents processed by {} thread(s): {}", config.threadsCount, finalCounter)
     }
   }

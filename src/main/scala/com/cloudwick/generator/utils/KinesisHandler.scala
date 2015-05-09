@@ -18,7 +18,7 @@ import scala.concurrent.duration._
  * Kinesis Handler
  * @author ashrith
  */
-class KinesisHandler(creds: Credentials) extends Handler with LazyLogging {
+class KinesisHandler(creds: Credentials) extends TextHandler with LazyLogging {
 
   private implicit val kinesis = createClient(creds.accessKey, creds.secretKey, creds.endPoint)
   private var stream: Option[Stream] = None
@@ -34,6 +34,9 @@ class KinesisHandler(creds: Credentials) extends Handler with LazyLogging {
                                   secretKey: String,
                                   endPoint: String): Client = {
     Client.fromCredentials(accessKey, secretKey, endPoint)
+  }
+
+  def close() = {
   }
 
   /**
@@ -80,7 +83,7 @@ class KinesisHandler(creds: Credentials) extends Handler with LazyLogging {
     true
   }
 
-  override def publishRecord(record: String) = {
+  override def publish(record: String) = {
     val waitDuration = 5
     try {
       val key = s"pk-${System.currentTimeMillis()}"

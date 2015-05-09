@@ -6,23 +6,21 @@ import java.util.Properties
 
 import kafka.message.Message
 import kafka.producer.{KeyedMessage, Producer, ProducerConfig}
-import org.apache.avro.Schema
-import org.apache.avro.generic.GenericRecord
 import org.apache.avro.io.{DatumWriter, Encoder, EncoderFactory}
-import org.apache.avro.specific.SpecificDatumWriter
-import org.slf4j.LoggerFactory
+import org.apache.avro.specific.{SpecificDatumWriter, SpecificRecord}
 
 import scala.collection.mutable.ArrayBuffer
-
-//import com.cloudwick.generator.model.LogEvent
+import scala.reflect.ClassTag
 
 
 /**
  * Kafka handler to write data to handler
  * @author ashrith 
  */
-class KafkaAvroHandler(val brokerList: String, val schemaDesc: String, val topicName: String) {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+class KafkaAvroHandler[T <: SpecificRecord](brokerList: String,
+                                            topicName: String)(implicit t: ClassTag[T])
+  extends AvroHandler[T] with LazyLogging {
+
   private val props = new Properties()
   props.put("serializer.class", "kafka.serializer.DefaultEncoder")
   props.put("metadata.broker.list", brokerList)
@@ -31,10 +29,9 @@ class KafkaAvroHandler(val brokerList: String, val schemaDesc: String, val topic
 
   private val bout: ByteArrayOutputStream = new ByteArrayOutputStream()
   private val avroEncoder: Encoder = EncoderFactory.get().binaryEncoder(bout, null)
-  private val schema = new Schema.Parser().parse(schemaDesc)
-  private val writer: DatumWriter[GenericRecord] = new SpecificDatumWriter[GenericRecord](schema)
-  // private static final SpecificDatumWriter<Event> avroEventWriter = new SpecificDatumWriter<Event>(Event.SCHEMA$);
-  // private val avroEventWriter = new SpecificDatumWriter[GenericRecord](schema)
+  private val writer: DatumWriter[T] = new SpecificDatumWriter[T](
+    t.runtimeClass.asInstanceOf[Class[T]]
+  )
 
   try {
     if (producer == null) {
@@ -55,14 +52,13 @@ class KafkaAvroHandler(val brokerList: String, val schemaDesc: String, val topic
   // Key and Value to send
   def send(keys: KeyedMessage[String, Message]) = {
     try {
-      // logger.debug("Attempting to send the key to kafka broker")
       producer.send(keys)
     }
   }
 
-  def publish(event: GenericRecord) = {
+  def publish(datum: T) = {
     try {
-      writer.write(event, avroEncoder)
+      writer.write(datum, avroEncoder)
       avroEncoder.flush()
       send(KeyedMessage[String, Message](topicName, java.util.UUID.randomUUID().toString, new Message(bout.toByteArray)))
     } catch {
@@ -70,16 +66,12 @@ class KafkaAvroHandler(val brokerList: String, val schemaDesc: String, val topic
     }
   }
 
-  def publishBuffered(events: ArrayBuffer[GenericRecord]) = {
+  def publishBuffered(datums: ArrayBuffer[T]) = {
     try {
-      events.foreach { event =>
-        logger.info("event: {}", event)
-        writer.write(event, avroEncoder)
+      datums.foreach { datum =>
+        writer.write(datum, avroEncoder)
         avroEncoder.flush()
-        logger.info("bevent: {}", bout.toByteArray)
-        //send(KeyedMessage[String, Message](topicName, java.util.UUID.randomUUID().toString, new Message(bout.toByteArray)))
         producer.send(new KeyedMessage[String, Message](topicName, new Message(ByteBuffer.wrap(bout.toByteArray))))
-        // producer.send(new KeyedMessage[String, Message](topicName, bout.toString))
       }
     } catch {
       case e: Throwable => logger.error("Error:: {}", e)

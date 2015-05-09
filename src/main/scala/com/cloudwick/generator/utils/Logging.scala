@@ -2,6 +2,9 @@ package com.cloudwick.generator.utils
 
 import org.slf4j.{Logger, LoggerFactory}
 
+/**
+ * Base Logging trait
+ */
 trait Logging {
   protected def logger: Logger
 }

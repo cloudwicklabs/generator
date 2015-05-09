@@ -2,20 +2,28 @@ package com.cloudwick.generator.utils
 
 import java.io.File
 import java.text.SimpleDateFormat
-import scala.collection.mutable.ArrayBuffer
+
 import org.apache.avro.file.DataFileWriter
-import org.apache.avro.generic.{GenericDatumWriter, GenericRecord}
-import org.apache.avro.Schema
-import org.slf4j.LoggerFactory
+import org.apache.avro.specific.{SpecificDatumWriter, SpecificRecord}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 /**
  * File handler with inbuilt capability to roll file's and is thread safe
  * @author ashrith 
  */
-class AvroFileHandler(val fileName: String, val schemaDesc: String, val maxFileSizeBytes: Int, val append: Boolean = false) {
-  lazy val logger = LoggerFactory.getLogger(getClass)
-  private var stream: DataFileWriter[GenericRecord] = null
-  private val schema = new Schema.Parser().parse(schemaDesc)
+class AvroFileHandler[T <: SpecificRecord](
+    fileName: String,
+    maxFileSizeBytes: Int,
+    append: Boolean = false)
+    (implicit t: ClassTag[T])
+  extends AvroHandler[T]
+  with LazyLogging {
+
+  private var stream: DataFileWriter[T] = null
+  //private val schema = new Schema.Parser().parse(schemaDesc)
+  private val schema = t.runtimeClass.newInstance.asInstanceOf[T].getSchema
   private var openTime: Long = 0
   private var bytesWrittenToFile: Long = 0
 
@@ -42,7 +50,9 @@ class AvroFileHandler(val fileName: String, val schemaDesc: String, val maxFileS
     logger.debug("Attempting to open the file {}", fileName)
     val dir = new File(fileName).getParentFile
     if ((dir ne null) && !dir.exists) dir.mkdirs
-    stream = new org.apache.avro.file.DataFileWriter[GenericRecord](new GenericDatumWriter[GenericRecord](schema))
+    stream = new org.apache.avro.file.DataFileWriter[T](
+      new SpecificDatumWriter[T](t.runtimeClass.asInstanceOf[Class[T]])
+    )
     if (append) {
       stream.appendTo(new File(fileName))
     } else {
@@ -65,7 +75,7 @@ class AvroFileHandler(val fileName: String, val schemaDesc: String, val maxFileS
     openFile()
   }
 
-  def publish(datum: GenericRecord) = {
+  def publish(datum: T) = {
     try {
       val lineSizeBytes = datum.toString.getBytes("UTF-8").length // this is not dependable
       synchronized {
@@ -81,7 +91,7 @@ class AvroFileHandler(val fileName: String, val schemaDesc: String, val maxFileS
     }
   }
 
-  def publishBuffered(datums: ArrayBuffer[GenericRecord]) = {
+  def publishBuffered(datums: ArrayBuffer[T]) = {
     var lineSizeBytes: Int = 0
     try {
       synchronized {

@@ -1,6 +1,7 @@
-{                                        
+{
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",                        
- "name":"ODVS_CustomerRatings",          
+ "name":"CustomerRating",
  "fields":[                              
    {"name":"CId","type":"int"},          
    {"name":"MovieID","type":"string"},   

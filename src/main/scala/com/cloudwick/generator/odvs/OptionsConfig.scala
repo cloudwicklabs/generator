@@ -6,7 +6,7 @@ package com.cloudwick.generator.odvs
  */
 case class OptionsConfig(
   eventsPerSec: Int = 1,
-  fileFormat: String = "tsv",
+  outputFormat: String = "tsv",
   filePath: String = "/tmp",
   fileRollSize: Int = Int.MaxValue, // in bytes
   totalEvents: Long = 1000,
@@ -15,5 +15,6 @@ case class OptionsConfig(
   dumpCustomers: Boolean = false,
   customerDataSetSize: Long = 1000000,
   threadsCount: Int = 1,
-  threadPoolSize: Int = 10
+  threadPoolSize: Int = 10,
+  logLevel: String = "INFO"
 )

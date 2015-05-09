@@ -1,24 +1,26 @@
 package com.cloudwick.generator.odvs
 
+import ch.qos.logback.classic.{Level, Logger}
+import com.cloudwick.generator.utils.LazyLogging
 import org.slf4j.LoggerFactory
 
 /**
- * Log events generator driver
+ * OnDemand video service generator driver
  * @author ashrith
  */
-object Driver extends App {
-  private val logger = LoggerFactory.getLogger(getClass)
+object Driver extends App with LazyLogging {
+  private val root = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME).asInstanceOf[Logger]
 
   /*
    * Command line option parser
    */
   val optionsParser = new scopt.OptionParser[OptionsConfig]("generator") {
     head("OnDemand Video Service Analytics")
-    opt[Int]("eventsPerSec") action { (x, c) =>
+    opt[Int]('e', "eventsPerSec") action { (x, c) =>
       c.copy(eventsPerSec = x)
     } text "number of events to generate per sec, use this to throttle the generator"
-    opt[String]('f', "fileFormat") action { (x, c) =>
-      c.copy(fileFormat = x)
+    opt[String]('o', "outputFormat") action { (x, c) =>
+      c.copy(outputFormat = x)
     } validate { x: String =>
       if (x == "tsv" || x == "csv" || x == "avro" || x == "seq")
         success
@@ -30,13 +32,13 @@ object Driver extends App {
       "\t\tcsv - string formatted by commas in between columns\n" +
       "\t\tavro - string formatted using avro serialization\n"
       //"\t\tseq - string formatted using sequence serialization"
-    opt[Int]('s', "fileRollSize") action { (x, c) =>
+    opt[Int]('r', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
-    } text "size of the file to rollin bytes, defaults to: Int.MaxValue (don't roll files)"
+    } text "size of the file to rollin bytes, defaults to: Int.MaxValue (~2GB)"
     opt[String]('p', "filePath") action { (x, c) =>
       c.copy(filePath = x)
     } text "path of the file where the data should be generated, defaults to: '/tmp'"
-    opt[Long]('e', "totalEvents") action { (x, c) =>
+    opt[Long]('t', "totalEvents") action { (x, c) =>
       c.copy(totalEvents = x)
     } text "total number of events to generate, default: 1000"
     opt[Long]('c', "customersDataSetSize") action { (x, c) =>
@@ -51,19 +53,41 @@ object Driver extends App {
     opt[Int]('b', "flushBatch") action { (x, c) =>
       c.copy(flushBatch = x)
     } text "number of events to flush to file at a single time, defaults to: 10000"
-    opt[Int]('t', "threadsCount") action { (x, c) =>
+    opt[Int]("threadsCount") action { (x, c) =>
       c.copy(threadsCount = x)
     } text "number of threads to use for write and read operations, defaults to: 1"
-    opt[Int]('p', "threadPoolSize") action { (x, c) =>
+    opt[Int]("threadPoolSize") action { (x, c) =>
       c.copy(threadPoolSize = x)
     } text "size of the thread pool, defaults to: 10"
+    opt[String]("loggingLevel") action { (x, c) =>
+      c.copy(logLevel = x)
+    } text "Logging level to set, defaults to: INFO"
     help("help") text "prints this usage text"
   }
 
   optionsParser.parse(args, OptionsConfig()) map { config =>
-    logger.info(s"Successfully parsed command line args : $config")
+    // Set logging level
+    val logLevel = config.logLevel match {
+      case "INFO" |"info"   => Level.INFO
+      case "TRACE"|"trace"  => Level.TRACE
+      case "DEBUG"|"debug"  => Level.DEBUG
+      case "WARN" |"warn"   => Level.WARN
+      case "ERROR"|"error"  => Level.ERROR
+    }
+    root.setLevel(logLevel)
 
+    logger.info(s"Successfully parsed command line args")
+    config
+      .getClass
+      .getDeclaredFields
+      .map(_.getName)
+      .zip(config.productIterator.to)
+      .toMap
+      .foreach { configElements =>
+      logger.info("Configuration element '{}' = '{}'", configElements._1, configElements._2)
+    }
     try {
+      logger.info("Initializing generator ...")
       new ConcurrentWriter(config.totalEvents, config).run()
     } catch {
       case e: Exception => logger.error("Error : {}", e.fillInStackTrace())

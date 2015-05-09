@@ -1,6 +1,7 @@
-{                                              
+{
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",                              
- "name":"ODVS_MovieGenre",                     
+ "name":"MovieGenre",
  "fields":[                                    
    {"name":"MovieGenre","type":"string"},      
    {"name":"MovieReleaseDate","type":"string"},

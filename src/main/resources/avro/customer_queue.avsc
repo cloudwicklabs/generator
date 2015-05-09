@@ -1,10 +1,11 @@
-{                                               
+{
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",                               
- "name":"ODVS_WatchHistory",                    
+ "name":"CustomerQueue",
  "fields":[                                     
    {"name":"CId","type":"int"},                 
    {"name":"CustomerTimeWatched","type":"long"},
-   {"name":"CustomerPausedTime","type":"long"}, 
+   {"name":"CName","type":"string"},            
    {"name":"MovieID","type":"string"},          
    {"name":"MovieName","type":"string"}         
   ]                                             
