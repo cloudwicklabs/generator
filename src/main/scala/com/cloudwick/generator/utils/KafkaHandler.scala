@@ -11,8 +11,7 @@ import scala.collection.mutable.ArrayBuffer
  * Kafka handler to write data to handler
  * @author ashrith 
  */
-class KafkaHandler(val brokerList: String, val topicName: String) {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+class KafkaHandler(val brokerList: String, val topicName: String) extends Handler with LazyLogging {
   private val props = new Properties()
   props.put("serializer.class", "kafka.serializer.StringEncoder")
   props.put("metadata.broker.list", brokerList)

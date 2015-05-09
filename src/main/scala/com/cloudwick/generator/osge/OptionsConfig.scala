@@ -6,12 +6,13 @@ package com.cloudwick.generator.osge
  */
 case class OptionsConfig(
   eventsPerSec: Int = 1,
-  fileFormat: String = "tsv",
+  outputFormat: String = "tsv",
   filePath: String = "/tmp",
   fileRollSize: Int = Int.MaxValue, // in bytes
   totalEvents: Long = 1000,
   flushBatch: Int = 10000,
   multiTable: Boolean = false,
   threadsCount: Int = 1,
-  threadPoolSize: Int = 10
+  threadPoolSize: Int = 10,
+  logLevel: String = "INFO"
 )

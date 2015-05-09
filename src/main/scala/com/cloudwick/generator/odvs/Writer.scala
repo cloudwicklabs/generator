@@ -1,12 +1,13 @@
 package com.cloudwick.generator.odvs
 
-import java.util.concurrent.atomic.AtomicLong
-import org.slf4j.LoggerFactory
-import com.cloudwick.generator.utils.{AvroFileHandler, FileHandler, Utils}
-import scala.collection.mutable.ArrayBuffer
-import org.apache.avro.generic.{GenericData, GenericRecord}
-import org.apache.avro.Schema
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
+
+import com.cloudwick.generator.avro._
+import com.cloudwick.generator.utils.{LazyLogging, AvroFileHandler, FileHandler, Utils}
+import org.slf4j.LoggerFactory
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Writes events to file
@@ -17,87 +18,9 @@ class Writer(eventsStartRange: Int,
                  customersMap: Map[Long, String],
                  counter: AtomicLong,
                  sizeCounter: AtomicLong,
-                 config: OptionsConfig) extends Runnable {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+                 config: OptionsConfig) extends Runnable with LazyLogging {
   lazy val utils = new Utils
   val movie = new MovieGenerator
-
-  lazy val schemaLine =
-    """
-      |{
-      | "type":"record",
-      | "name":"ODVS",
-      | "fields":[
-      |   {"name":"CId","type":"int"},
-      |   {"name":"CName","type":"string"},
-      |   {"name":"UserActive","type":"int"},
-      |   {"name":"TimeStamp","type":"long"},
-      |   {"name":"PauseTime","type":"long"},
-      |   {"name":"MovieRating","type":"string"},
-      |   {"name":"MovieID","type":"string"},
-      |   {"name":"MovieName","type":"string"},
-      |   {"name":"MovieReleaseDate","type":"string"},
-      |   {"name":"MovieLength","type":"int"},
-      |   {"name":"MovieGenre","type":"string"}
-      |  ]
-      |}
-    """.stripMargin
-  lazy val schemaMultiWatchHistory =
-    """
-      |{
-      | "type":"record",
-      | "name":"ODVS_WatchHistory",
-      | "fields":[
-      |   {"name":"CId","type":"int"},
-      |   {"name":"CustomerTimeWatched","type":"long"},
-      |   {"name":"CustomerPausedTime","type":"long"},
-      |   {"name":"MovieID","type":"string"},
-      |   {"name":"MovieName","type":"string"}
-      |  ]
-      |}
-    """.stripMargin
-  lazy val schemaMultiCustomerRatings =
-    """
-      |{
-      | "type":"record",
-      | "name":"ODVS_CustomerRatings",
-      | "fields":[
-      |   {"name":"CId","type":"int"},
-      |   {"name":"MovieID","type":"string"},
-      |   {"name":"MovieName","type":"string"},
-      |   {"name":"CName","type":"string"},
-      |   {"name":"MovieRating","type":"string"}
-      |  ]
-      |}
-    """.stripMargin
-  lazy val schemaMultiCustomerQueue =
-    """
-      |{
-      | "type":"record",
-      | "name":"ODVS_CustomerQueue",
-      | "fields":[
-      |   {"name":"CId","type":"int"},
-      |   {"name":"CustomerTimeWatched","type":"long"},
-      |   {"name":"CName","type":"string"},
-      |   {"name":"MovieID","type":"string"},
-      |   {"name":"MovieName","type":"string"}
-      |  ]
-      |}
-    """.stripMargin
-  lazy val schemaMultiMovieGenre =
-    """
-      |{
-      | "type":"record",
-      | "name":"ODVS_MovieGenre",
-      | "fields":[
-      |   {"name":"MovieGenre","type":"string"},
-      |   {"name":"MovieReleaseDate","type":"string"},
-      |   {"name":"MovieID","type":"string"},
-      |   {"name":"MovieLength","type":"int"},
-      |   {"name":"MovieName","type":"string"}
-      |  ]
-      |}
-    """.stripMargin
 
   lazy val sleepTime = if(config.eventsPerSec == 0) 0 else 1000/config.eventsPerSec
 
@@ -135,100 +58,103 @@ class Writer(eventsStartRange: Int,
   }
 
   def avroEvent(odvsEvent: ODVSEvent) = {
-    val schema = new Schema.Parser().parse(schemaLine)
-    val datum: GenericRecord = new GenericData.Record(schema)
-    datum.put("CId", odvsEvent.cId)
-    datum.put("CName", odvsEvent.cName)
-    datum.put("UserActive", odvsEvent.userActive)
-    datum.put("TimeStamp", odvsEvent.cWatchInit)
-    datum.put("PauseTime", odvsEvent.cWatchPauseTime)
-    datum.put("MovieRating", odvsEvent.cMovieRating)
-    datum.put("MovieID", odvsEvent.mId)
-    datum.put("MovieName", odvsEvent.mName)
-    datum.put("MovieReleaseDate", odvsEvent.mReleaseDate)
-    datum.put("MovieLength", odvsEvent.mLength)
-    datum.put("MovieGenre", odvsEvent.mGenre)
-    datum
+    ODVSRecord.newBuilder()
+      .setCId(odvsEvent.cId)
+      .setCName(odvsEvent.cName)
+      .setUserActive(odvsEvent.userActive)
+      .setTimeStamp(odvsEvent.cWatchInit)
+      .setPauseTime(odvsEvent.cWatchPauseTime)
+      .setMovieRating(odvsEvent.cMovieRating)
+      .setMovieID(odvsEvent.mId)
+      .setMovieName(odvsEvent.mName)
+      .setMovieReleaseDate(odvsEvent.mReleaseDate)
+      .setMovieLength(odvsEvent.mLength)
+      .setMovieGenre(odvsEvent.mGenre)
+      .build()
   }
 
-  def avroMultiEvent(odvsEvent: ODVSEvent) = {
-    val schemaWatchHistory = new Schema.Parser().parse(schemaMultiWatchHistory)
-    val datumWatchHistory: GenericRecord = new GenericData.Record(schemaWatchHistory)
-    datumWatchHistory.put("CId", odvsEvent.cId)
-    datumWatchHistory.put("CustomerTimeWatched", odvsEvent.cWatchInit)
-    datumWatchHistory.put("CustomerPausedTime", odvsEvent.cWatchPauseTime)
-    datumWatchHistory.put("MovieID", odvsEvent.mId)
-    datumWatchHistory.put("MovieName", odvsEvent.mName)
+  def watchHistoryEvent(event: ODVSEvent) = {
+    WatchHistory.newBuilder()
+      .setCId(event.cId)
+      .setCustomerTimeWatched(event.cWatchInit)
+      .setCustomerTimeWatched(event.cWatchPauseTime)
+      .setMovieID(event.mId)
+      .setMovieName(event.mName)
+      .build()
+  }
 
-    val schemaCustomerRatings = new Schema.Parser().parse(schemaMultiCustomerRatings)
-    val datumCustomerRatings: GenericRecord = new GenericData.Record(schemaCustomerRatings)
-    datumCustomerRatings.put("CId", odvsEvent.cId)
-    datumCustomerRatings.put("MovieID", odvsEvent.mId)
-    datumCustomerRatings.put("MovieName", odvsEvent.mName)
-    datumCustomerRatings.put("CName", odvsEvent.cName)
-    datumCustomerRatings.put("MovieRating", odvsEvent.cMovieRating)
+  def customerRatingEvent(event: ODVSEvent) = {
+    CustomerRating.newBuilder()
+      .setCId(event.cId)
+      .setMovieID(event.mId)
+      .setMovieName(event.mName)
+      .setCName(event.cName)
+      .setMovieRating(event.cMovieRating)
+      .build()
+  }
 
-    val schemaCustomerQueue = new Schema.Parser().parse(schemaMultiCustomerQueue)
-    val datumCustomerQueue: GenericRecord = new GenericData.Record(schemaCustomerQueue)
-    datumCustomerQueue.put("CId", odvsEvent.cId)
-    datumCustomerQueue.put("CustomerTimeWatched", odvsEvent.cWatchInit)
-    datumCustomerQueue.put("CName", odvsEvent.cName)
-    datumCustomerQueue.put("MovieID", odvsEvent.mId)
-    datumCustomerQueue.put("MovieName", odvsEvent.mName)
+  def customerQueueEvent(event: ODVSEvent) = {
+    CustomerQueue.newBuilder()
+      .setCId(event.cId)
+      .setCustomerTimeWatched(event.cWatchInit)
+      .setCName(event.cName)
+      .setMovieID(event.mId)
+      .setMovieName(event.mName)
+      .build()
+  }
 
-    val schemaMovieGenre = new Schema.Parser().parse(schemaMultiMovieGenre)
-    val datumMovieGenre: GenericRecord = new GenericData.Record(schemaMovieGenre)
-    datumMovieGenre.put("MovieGenre", odvsEvent.mGenre)
-    datumMovieGenre.put("MovieReleaseDate", odvsEvent.mReleaseDate)
-    datumMovieGenre.put("MovieID", odvsEvent.mId)
-    datumMovieGenre.put("MovieLength", odvsEvent.mLength)
-    datumMovieGenre.put("MovieName", odvsEvent.mName)
-
-    Map[String, GenericRecord](
-      "WatchHistory" -> datumWatchHistory,
-      "CustomerRatings" -> datumCustomerRatings,
-      "CustomerQueue" -> datumCustomerQueue,
-      "MovieGenre" -> datumMovieGenre
-    )
+  def movieGenreEvent(event: ODVSEvent) = {
+    MovieGenre.newBuilder()
+      .setMovieGenre(event.mGenre)
+      .setMovieReleaseDate(event.mReleaseDate)
+      .setMovieID(event.mId)
+      .setMovieLength(event.mLength)
+      .setMovieName(event.mName)
+      .build()
   }
 
   def run() = {
     val totalEvents = eventsEndRange - eventsStartRange + 1
     var batchCount: Int = 0
     var outputFileHandler: FileHandler = null
-    var outputAvroFileHandler: AvroFileHandler = null
+    var outputAvroFileHandler: AvroFileHandler[ODVSRecord] = null
     var outputFileWatchHistoryHandler: FileHandler = null
     var outputFileCustomerRatingsHandler: FileHandler = null
     var outputFileCustomerQueueHandler: FileHandler = null
     var outputFileMovieGenreHandler: FileHandler = null
-    var outputAvroFileWatchHistoryHandler: AvroFileHandler = null
-    var outputAvroFileCustomerRatingsHandler: AvroFileHandler = null
-    var outputAvroFileCustomerQueueHandler: AvroFileHandler = null
-    var outputAvroFileMovieGenreHandler: AvroFileHandler = null
+    var outputAvroFileWatchHistoryHandler: AvroFileHandler[WatchHistory] = null
+    var outputAvroFileCustomerRatingsHandler: AvroFileHandler[CustomerRating] = null
+    var outputAvroFileCustomerQueueHandler: AvroFileHandler[CustomerQueue] = null
+    var outputAvroFileMovieGenreHandler: AvroFileHandler[MovieGenre] = null
     var eventsText: ArrayBuffer[String] = null
     var watchHistoryEventsText: ArrayBuffer[String] = null
     var customerRatingsEventsText: ArrayBuffer[String] = null
     var customerQueueEventsText: ArrayBuffer[String] = null
     var movieGenreEventsText: ArrayBuffer[String] = null
-    var eventsAvro: ArrayBuffer[GenericRecord] = null
-    var watchHistoryEventsAvro: ArrayBuffer[GenericRecord] = null
-    var customerRatingsEventsAvro: ArrayBuffer[GenericRecord] = null
-    var customerQueueEventsAvro: ArrayBuffer[GenericRecord] = null
-    var movieGenreEventsAvro: ArrayBuffer[GenericRecord] = null
     var multiTableText: Map[String, String] = null
-    var multiTableAvro: Map[String, GenericRecord] = null
-
+    var eventsAvro: ArrayBuffer[ODVSRecord] = null
+    var watchHistoryEventsAvro: ArrayBuffer[WatchHistory] = null
+    var customerRatingsEventsAvro: ArrayBuffer[CustomerRating] = null
+    var customerQueueEventsAvro: ArrayBuffer[CustomerQueue] = null
+    var movieGenreEventsAvro: ArrayBuffer[MovieGenre] = null
+    var watchHistory: WatchHistory = null
+    var customerRating: CustomerRating = null
+    var customerQueue: CustomerQueue = null
+    var odvsEvent: ODVSEvent = null
+    var movieGenre: MovieGenre = null
+    var textPlaceHolder:String = null
+    var avroPlaceHolder: ODVSRecord = null
 
     if (config.multiTable) {
-      if (config.fileFormat == "avro") {
-        outputAvroFileWatchHistoryHandler = new AvroFileHandler(new File(config.filePath, s"odvs_watch_history_$threadName.data").toString, schemaMultiWatchHistory, config.fileRollSize)
-        outputAvroFileCustomerRatingsHandler = new AvroFileHandler(new File(config.filePath, s"odvs_customer_rating_$threadName.data").toString, schemaMultiCustomerRatings, config.fileRollSize)
-        outputAvroFileCustomerQueueHandler = new AvroFileHandler(new File(config.filePath, s"odvs_customer_queue_$threadName.data").toString, schemaMultiCustomerQueue ,config.fileRollSize)
-        outputAvroFileMovieGenreHandler = new AvroFileHandler(new File(config.filePath, s"odvs_movie_genre_$threadName.data").toString, schemaMultiMovieGenre, config.fileRollSize)
-        watchHistoryEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
-        customerRatingsEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
-        customerQueueEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
-        movieGenreEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
+      if (config.outputFormat == "avro") {
+        outputAvroFileWatchHistoryHandler = new AvroFileHandler[WatchHistory](new File(config.filePath, s"odvs_watch_history_$threadName.data").toString, config.fileRollSize)
+        outputAvroFileCustomerRatingsHandler = new AvroFileHandler[CustomerRating](new File(config.filePath, s"odvs_customer_rating_$threadName.data").toString, config.fileRollSize)
+        outputAvroFileCustomerQueueHandler = new AvroFileHandler[CustomerQueue](new File(config.filePath, s"odvs_customer_queue_$threadName.data").toString, config.fileRollSize)
+        outputAvroFileMovieGenreHandler = new AvroFileHandler[MovieGenre](new File(config.filePath, s"odvs_movie_genre_$threadName.data").toString, config.fileRollSize)
+        watchHistoryEventsAvro = new ArrayBuffer[WatchHistory](config.flushBatch)
+        customerRatingsEventsAvro = new ArrayBuffer[CustomerRating](config.flushBatch)
+        customerQueueEventsAvro = new ArrayBuffer[CustomerQueue](config.flushBatch)
+        movieGenreEventsAvro = new ArrayBuffer[MovieGenre](config.flushBatch)
       } else {
         outputFileWatchHistoryHandler = new FileHandler(new File(config.filePath, s"odvs_watch_history_$threadName.data").toString, config.fileRollSize)
         outputFileCustomerRatingsHandler = new FileHandler(new File(config.filePath, s"odvs_customer_rating_$threadName.data").toString, config.fileRollSize)
@@ -240,19 +166,17 @@ class Writer(eventsStartRange: Int,
         movieGenreEventsText  = new ArrayBuffer[String](config.flushBatch)
       }
     } else {
-      if (config.fileFormat == "avro") {
-        outputAvroFileHandler = new AvroFileHandler(new File(config.filePath,s"odvs_$threadName.data").toString, schemaLine, config.fileRollSize)
-        eventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
+      if (config.outputFormat == "avro") {
+        outputAvroFileHandler = new AvroFileHandler[ODVSRecord](new File(config.filePath,s"odvs_$threadName.data").toString, config.fileRollSize)
+        eventsAvro = new ArrayBuffer[ODVSRecord](config.flushBatch)
       } else {
         outputFileHandler = new FileHandler(new File(config.filePath, s"odvs_$threadName.data").toString, config.fileRollSize)
         eventsText  = new ArrayBuffer[String](config.flushBatch)
       }
     }
 
-    var odvsEvent: ODVSEvent = null
-
     try {
-      if (config.fileFormat == "avro") {
+      if (config.outputFormat == "avro") {
         if (config.multiTable) {
           outputAvroFileWatchHistoryHandler.openFile()
           outputAvroFileCustomerRatingsHandler.openFile()
@@ -272,8 +196,6 @@ class Writer(eventsStartRange: Int,
         }
       }
 
-      var textPlaceHolder:String = null
-      var avroPlaceHolder:GenericRecord = null
       (eventsStartRange to eventsEndRange).foreach { eventCount =>
         batchCount += 1
         odvsEvent = new ODVSGenerator(customersMap, movie).eventGenerate
@@ -282,19 +204,22 @@ class Writer(eventsStartRange: Int,
          * Fill the buffers
          */
         if (config.multiTable) {
-          if (config.fileFormat == "avro") {
-            multiTableAvro = avroMultiEvent(odvsEvent)
-            watchHistoryEventsAvro += multiTableAvro("WatchHistory")
-            sizeCounter.getAndAdd(multiTableAvro("WatchHistory").toString.getBytes.length)
-            customerRatingsEventsAvro += multiTableAvro("CustomerRatings")
-            sizeCounter.getAndAdd(multiTableAvro("CustomerRatings").toString.getBytes.length)
-            customerQueueEventsAvro += multiTableAvro("CustomerQueue")
-            sizeCounter.getAndAdd(multiTableAvro("CustomerQueue").toString.getBytes.length)
-            movieGenreEventsAvro += multiTableAvro("MovieGenre")
-            sizeCounter.getAndAdd(multiTableAvro("MovieGenre").toString.getBytes.length)
+          if (config.outputFormat == "avro") {
+            watchHistory = watchHistoryEvent(odvsEvent)
+            customerRating = customerRatingEvent(odvsEvent)
+            customerQueue = customerQueueEvent(odvsEvent)
+            movieGenre = movieGenreEvent(odvsEvent)
 
+            watchHistoryEventsAvro += watchHistory
+            sizeCounter.getAndAdd(watchHistory.toString.getBytes.length)
+            customerRatingsEventsAvro += customerRating
+            sizeCounter.getAndAdd(customerRating.toString.getBytes.length)
+            customerQueueEventsAvro += customerQueue
+            sizeCounter.getAndAdd(customerQueue.toString.getBytes.length)
+            movieGenreEventsAvro += movieGenre
+            sizeCounter.getAndAdd(movieGenre.toString.getBytes.length)
           } else {
-            multiTableText = formatEventMultiToString(odvsEvent, config.fileFormat)
+            multiTableText = formatEventMultiToString(odvsEvent, config.outputFormat)
             watchHistoryEventsText += multiTableText("WatchHistory")
             sizeCounter.getAndAdd(multiTableText("WatchHistory").getBytes.length)
             customerRatingsEventsText += multiTableText("CustomerRatings")
@@ -305,12 +230,12 @@ class Writer(eventsStartRange: Int,
             sizeCounter.getAndAdd(multiTableText("MovieGenre").getBytes.length)
           }
         } else {
-          if (config.fileFormat == "avro") {
+          if (config.outputFormat == "avro") {
             avroPlaceHolder = avroEvent(odvsEvent)
             eventsAvro += avroPlaceHolder
             sizeCounter.getAndAdd(avroPlaceHolder.toString.getBytes.length)
           } else {
-            textPlaceHolder = formatEventToString(odvsEvent, config.fileFormat)
+            textPlaceHolder = formatEventToString(odvsEvent, config.outputFormat)
             eventsText += textPlaceHolder
             sizeCounter.getAndAdd(textPlaceHolder.getBytes.length)
           }
@@ -319,7 +244,7 @@ class Writer(eventsStartRange: Int,
         counter.getAndIncrement
         if (batchCount == config.flushBatch || batchCount == totalEvents) {
           if (config.multiTable) {
-            if (config.fileFormat == "avro") {
+            if (config.outputFormat == "avro") {
               outputAvroFileWatchHistoryHandler.publishBuffered(watchHistoryEventsAvro)
               outputAvroFileCustomerQueueHandler.publishBuffered(customerQueueEventsAvro)
               outputAvroFileCustomerRatingsHandler.publishBuffered(customerRatingsEventsAvro)
@@ -340,7 +265,7 @@ class Writer(eventsStartRange: Int,
             }
             batchCount = 0
           } else {
-            if (config.fileFormat == "avro") {
+            if (config.outputFormat == "avro") {
               outputAvroFileHandler.publishBuffered(eventsAvro)
               eventsAvro.clear()
             } else {
@@ -357,7 +282,7 @@ class Writer(eventsStartRange: Int,
     }
     finally {
       if (config.multiTable) {
-        if (config.fileFormat == "avro") {
+        if (config.outputFormat == "avro") {
           outputAvroFileWatchHistoryHandler.close()
           outputAvroFileCustomerQueueHandler.close()
           outputAvroFileCustomerRatingsHandler.close()
@@ -369,7 +294,7 @@ class Writer(eventsStartRange: Int,
           outputFileMovieGenreHandler.close()
         }
       } else {
-        if (config.fileFormat == "avro") {
+        if (config.outputFormat == "avro") {
           outputAvroFileHandler.close()
         } else {
           outputFileHandler.close()

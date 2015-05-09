@@ -1,6 +1,7 @@
 {
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",
- "name":"OSGE_Revenue",
+ "name":"Revenue",
  "fields":[
    {"name":"CId","type":"string"},
    {"name":"CPaidDate","type":"long"},

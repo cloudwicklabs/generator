@@ -1,6 +1,7 @@
 {
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",
- "name":"OSGE",
+ "name":"OSGERecord",
  "fields":[
    {"name":"CId","type":"string"},
    {"name":"CName","type":"string"},

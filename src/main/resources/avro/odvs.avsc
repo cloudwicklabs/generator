@@ -1,6 +1,7 @@
-{                                              
+{
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",                              
- "name":"ODVS",                                
+ "name":"ODVSRecord",
  "fields":[                                    
    {"name":"CId","type":"int"},                
    {"name":"CName","type":"string"},           

@@ -1,6 +1,8 @@
+/* Generate java sources using: java -jar avro-tools.jar src/main/resources/avro/log_events.avsc src/main/java */
 {
+ "namespace": "com.cloudwick.generator.avro",
  "type":"record",
- "name":"LogEvent",
+ "name":"LogEventAvroObj",
  "fields":[
    {"name":"OriginatingIp","type":"string"},
    {"name":"ClientIdentity","type":"string"},

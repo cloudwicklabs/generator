@@ -9,7 +9,9 @@ import org.slf4j.LoggerFactory
  * File handler with inbuilt capability to roll file's and is thread safe
  * @author ashrith 
  */
-class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: Boolean = false) {
+class FileHandler(val fileName: String, val maxFileSizeBytes: Int, val append: Boolean = false)
+  extends Handler {
+
   lazy val logger = LoggerFactory.getLogger(getClass)
   private var stream: Writer = null
   private var openTime: Long = 0

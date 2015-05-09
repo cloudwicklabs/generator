@@ -1,7 +1,7 @@
 package com.cloudwick.generator.osge
 
 import org.slf4j.LoggerFactory
-import com.cloudwick.generator.utils.Utils
+import com.cloudwick.generator.utils.{LazyLogging, Utils}
 import java.util.concurrent.{Executors, ExecutorService}
 import java.util.concurrent.atomic.AtomicLong
 
@@ -9,8 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
  * Description goes here
  * @author ashrith 
  */
-class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnable with LazyLogging {
   val utils = new Utils
   val threadPool: ExecutorService = Executors.newFixedThreadPool(config.threadPoolSize)
   val finalCounter: AtomicLong = new AtomicLong(0L)
@@ -39,6 +38,7 @@ class ConcurrentWriter(totalEvents: Long, config: OptionsConfig) extends Runnabl
         threadPool.shutdown()
       }
       while(!threadPool.isTerminated) {
+        logger.trace("Sleeping for 10 seconds ...")
         Thread.sleep(10 * 1000)
         logger.info("Events generated: {}, size: '{}' bytes", finalCounter, finalBytesCounter.longValue())
       }

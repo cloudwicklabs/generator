@@ -1,8 +1,8 @@
 package com.cloudwick.generator.logEvents
 
-import org.slf4j.LoggerFactory;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import org.slf4j.LoggerFactory
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
 import com.cloudwick.generator.utils.LazyLogging
 
 /**
@@ -47,7 +47,7 @@ object Driver extends App with LazyLogging {
       "\t\tkinesis - output to specified kinesis"
     opt[Int]('r', "fileRollSize") action { (x, c) =>
       c.copy(fileRollSize = x)
-    } text "size of the file to roll in bytes, defaults to: Int.MaxValue (don't roll files)"
+    } text "size of the file to roll in bytes, defaults to: Int.MaxValue (~2GB)"
     opt[String]('p', "filePath") action { (x, c) =>
       c.copy(filePath = x)
     } text "path of the file where the data should be generated, defaults to: '/tmp'"
@@ -99,17 +99,17 @@ object Driver extends App with LazyLogging {
   optionsParser.parse(args, OptionsConfig()) map { config =>
     // Set the logging level
     val logLevel = config.logLevel match {
-      case "INFO"|"info"    => Level.INFO
+      case "INFO" |"info"   => Level.INFO
       case "TRACE"|"trace"  => Level.TRACE
       case "DEBUG"|"debug"  => Level.DEBUG
-      case "WARN"|"warn"    => Level.WARN
+      case "WARN" |"warn"   => Level.WARN
       case "ERROR"|"error"  => Level.ERROR
     }
     root.setLevel(logLevel)
 
     if (config.destination == "kinesis") {
       if (config.awsAccessKey.isEmpty || config.awsSecretKey.isEmpty || config.awsEndPoint.isEmpty) {
-        logger.error("Error: you have to specify aws credentials for kinesis destination")
+        logger.error("Missing 'awsAccessKey', 'awsSecretKey' and 'awsEndPoint' arguments")
         System.exit(1)
       }
     }
@@ -119,11 +119,11 @@ object Driver extends App with LazyLogging {
       .getClass
       .getDeclaredFields
       .map(_.getName)
-      .zip( config.productIterator.to )
+      .zip(config.productIterator.to)
       .toMap
       .foreach { configElements =>
         logger.info("Configuration element '{}' = '{}'", configElements._1, configElements._2)
-    }
+      }
     try {
       logger.info("Initializing generator ...")
       new ConcurrentWriter(config.totalEvents, config).run()

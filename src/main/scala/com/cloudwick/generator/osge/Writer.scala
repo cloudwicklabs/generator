@@ -1,15 +1,17 @@
 package com.cloudwick.generator.osge
 
-import java.util.concurrent.atomic.AtomicLong
-import org.slf4j.LoggerFactory
-import com.cloudwick.generator.utils.{AvroFileHandler, FileHandler, Utils}
-import org.apache.avro.Schema
-import org.apache.avro.generic.{GenericData, GenericRecord}
-import scala.collection.mutable.ArrayBuffer
 import java.io.File
-import java.util.Calendar
 import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.concurrent.atomic.AtomicLong
+
+import com.cloudwick.generator.avro.{Customer, Fact, OSGERecord, Revenue}
+import com.cloudwick.generator.utils.{LazyLogging, AvroFileHandler, FileHandler, Utils}
+import org.apache.avro.specific.SpecificRecord
+import org.slf4j.LoggerFactory
+
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Writes events to file
@@ -19,75 +21,9 @@ class Writer(eventsStartRange: Int,
              eventsEndRange: Int,
              counter: AtomicLong,
              sizeCounter: AtomicLong,
-             config: OptionsConfig) extends Runnable {
-  lazy val logger = LoggerFactory.getLogger(getClass)
+             config: OptionsConfig) extends Runnable with LazyLogging {
   lazy val utils = new Utils
-  lazy val schemaLine =
-  """
-    |{
-    | "type":"record",
-    | "name":"OSGE",
-    | "fields":[
-    |   {"name":"CId","type":"string"},
-    |   {"name":"CName","type":"string"},
-    |   {"name":"CEmail","type":"string"},
-    |   {"name":"CGender","type":"string"},
-    |   {"name":"CAge","type":"int"},
-    |   {"name":"CAddress","type":"string"},
-    |   {"name":"CCountry","type":"string"},
-    |   {"name":"CRegisterDate","type":"long"},
-    |   {"name":"CFriendCount","type":"int"},
-    |   {"name":"CLifeTime","type":"int"},
-    |   {"name":"CityPlayedCount","type":"int"},
-    |   {"name":"PictionaryPlayedCount","type":"int"},
-    |   {"name":"ScramblePlayedCount","type":"int"},
-    |   {"name":"SniperPlayedCount","type":"int"},
-    |   {"name":"CRevenue","type":"int"},
-    |   {"name":"PaidSubscriber","type":"string"}
-    |  ]
-    |}
-  """.stripMargin
-  lazy val schemaMultiCustomer =
-  """
-    |{
-    | "type":"record",
-    | "name":"OSGE_Customer",
-    | "fields":[
-    |   {"name":"CId","type":"string"},
-    |   {"name":"CName","type":"string"},
-    |   {"name":"CGender","type":"string"},
-    |   {"name":"CAge","type":"int"},
-    |   {"name":"CRegisterDate","type":"long"},
-    |   {"name":"CCountry","type":"string"},
-    |   {"name":"CFriendCount","type":"int"},
-    |   {"name":"CLifeTime","type":"int"}
-    |  ]
-    |}
-  """.stripMargin
-  lazy val schemaMultiRevenue =
-  """
-    |{
-    | "type":"record",
-    | "name":"OSGE_Revenue",
-    | "fields":[
-    |   {"name":"CId","type":"string"},
-    |   {"name":"CPaidDate","type":"long"},
-    |   {"name":"CRevenue","type":"int"}
-    |  ]
-    |}
-  """.stripMargin
-  lazy val schemaMultiFact =
-    """
-      |{
-      | "type":"record",
-      | "name":"OSGE_Fact",
-      | "fields":[
-      |   {"name":"CId","type":"string"},
-      |   {"name":"CGamePlayed","type":"string"},
-      |   {"name":"CGamePlayedDate","type":"long"}
-      |  ]
-      |}
-    """.stripMargin
+  lazy val dateFormatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
   lazy val sleepTime = if(config.eventsPerSec == 0) 0 else 1000/config.eventsPerSec
 
@@ -141,109 +77,98 @@ class Writer(eventsStartRange: Int,
     ms
   }
 
-  def avroEvent(osgeEvent: OSGEEvent) = {
-    val schema = new Schema.Parser().parse(schemaLine)
-    val datum: GenericRecord = new GenericData.Record(schema)
-    datum.put("CId", osgeEvent.cID)
-    datum.put("CName", osgeEvent.cName)
-    datum.put("CEmail", osgeEvent.cEmail)
-    datum.put("CGender", osgeEvent.cGender)
-    datum.put("CAge", osgeEvent.cAge)
-    datum.put("CAddress", osgeEvent.cAddress)
-    datum.put("CCountry", osgeEvent.cCountry)
-    datum.put("CRegisterDate", osgeEvent.cRegisterDate)
-    datum.put("CFriendCount", osgeEvent.cFriendCount)
-    datum.put("CLifeTime", osgeEvent.cLifeTime)
-    datum.put("CityPlayedCount", osgeEvent.cityGamePlayed)
-    datum.put("PictionaryPlayedCount", osgeEvent.pictionaryGamePlayed)
-    datum.put("ScramblePlayedCount", osgeEvent.scrambleGamePlayed)
-    datum.put("SniperPlayedCount", osgeEvent.sniperGamePlayed)
-    datum.put("CRevenue", osgeEvent.cRevenue)
-    datum.put("PaidSubscriber", osgeEvent.paidSubscriber)
-    datum
+  def avroEvent(event: OSGEEvent) = {
+    OSGERecord.newBuilder()
+      .setCId(event.cID)
+      .setCName(event.cName)
+      .setCEmail(event.cEmail)
+      .setCGender(event.cGender)
+      .setCAge(event.cAge)
+      .setCAddress(event.cAddress)
+      .setCCountry(event.cCountry)
+      .setCRegisterDate(event.cRegisterDate)
+      .setCFriendCount(event.cFriendCount)
+      .setCLifeTime(event.cLifeTime)
+      .setCityPlayedCount(event.cityGamePlayed)
+      .setPictionaryPlayedCount(event.pictionaryGamePlayed)
+      .setScramblePlayedCount(event.scrambleGamePlayed)
+      .setSniperPlayedCount(event.sniperGamePlayed)
+      .setCRevenue(event.cRevenue)
+      .setPaidSubscriber(event.paidSubscriber)
+      .build()
   }
 
-  def avroMultiEvent(osgeEvent: OSGEEvent) = {
-    val ms = scala.collection.mutable.Map[String, ArrayBuffer[GenericRecord]](
-      "Customer" -> new ArrayBuffer[GenericRecord],
-      "Revenue" -> new ArrayBuffer[GenericRecord],
-      "Fact" -> new ArrayBuffer[GenericRecord](osgeEvent.cLifeTime)
-    )
-    val dateFormatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
+  def customerEvent(event: OSGEEvent) = {
+    Customer.newBuilder()
+      .setCId(event.cID)
+      .setCName(event.cName)
+      .setCGender(event.cGender)
+      .setCAge(event.cAge)
+      .setCRegisterDate(event.cRegisterDate)
+      .setCCountry(event.cCountry)
+      .setCFriendCount(event.cFriendCount)
+      .setCLifeTime(event.cLifeTime)
+      .build()
+  }
 
-    val schemaCustomer = new Schema.Parser().parse(schemaMultiCustomer)
-    val datumCustomer: GenericRecord = new GenericData.Record(schemaCustomer)
-    datumCustomer.put("CId", osgeEvent.cID)
-    datumCustomer.put("CName", osgeEvent.cName)
-    datumCustomer.put("CGender", osgeEvent.cGender)
-    datumCustomer.put("CAge", osgeEvent.cAge)
-    datumCustomer.put("CRegisterDate", osgeEvent.cRegisterDate)
-    datumCustomer.put("CCountry", osgeEvent.cCountry)
-    datumCustomer.put("CFriendCount", osgeEvent.cFriendCount)
-    datumCustomer.put("CLifeTime", osgeEvent.cLifeTime)
+  def revenueEvent(event: OSGEEvent) = {
+    Revenue.newBuilder()
+      .setCId(event.cID)
+      .setCPaidDate(event.paidDate)
+      .setCRevenue(event.cRevenue)
+      .build()
+  }
 
-    ms("Customer") += datumCustomer
-
-    if (osgeEvent.cRevenue != 0) {
-      val schemaRevenue = new Schema.Parser().parse(schemaMultiRevenue)
-      val datumRevenue: GenericRecord = new GenericData.Record(schemaRevenue)
-      datumRevenue.put("CId", osgeEvent.cID)
-      datumRevenue.put("CPaidDate", osgeEvent.paidDate)
-      datumRevenue.put("CRevenue", osgeEvent.cRevenue)
-
-      ms("Revenue") += datumRevenue
+  def factEvent(event: OSGEEvent) = {
+    val gamesProbMap =  if (event.cGender == "female") {
+      Customers.GAMES_FEMALE_PROBABILITY
+    } else {
+      Customers.GAMES_MALE_PROBABILITY
     }
 
-    1 to osgeEvent.cLifeTime foreach { _ =>
-      val gamesProbMap =  if (osgeEvent.cGender == "female") {
-        Customers.GAMES_FEMALE_PROBABILITY
-      } else {
-        Customers.GAMES_MALE_PROBABILITY
-      }
-      val schemaFact = new Schema.Parser().parse(schemaMultiFact)
-      val datumFact: GenericRecord = new GenericData.Record(schemaFact)
-      datumFact.put("CId", osgeEvent.cID)
-      datumFact.put("CGamePlayed", utils.pickWeightedKey(gamesProbMap))
-      datumFact.put("CGamePlayedDate",
-        utils.genDate(dateFormatter.format(osgeEvent.cRegisterDate),
-          dateFormatter.format(Calendar.getInstance().getTimeInMillis)))
-
-      ms("Fact") += datumFact
-    }
-    ms
+    Fact.newBuilder()
+      .setCId(event.cID)
+      .setCGamePlayed(utils.pickWeightedKey(gamesProbMap))
+      .setCGamePlayedDate(
+        utils.genDate(dateFormatter.format(event.cRegisterDate),
+        dateFormatter.format(Calendar.getInstance().getTimeInMillis))
+      )
+      .build()
   }
 
   def run() = {
     val totalEvents = eventsEndRange - eventsStartRange + 1
     var batchCount: Int = 0
     var outputFileHandler: FileHandler = null
-    var outputAvroFileHandler: AvroFileHandler = null
+    var outputAvroFileHandler: AvroFileHandler[OSGERecord] = null
     var outputFileCustomerHandler: FileHandler = null
     var outputFileRevenueHandler: FileHandler = null
     var outputFileFactHandler: FileHandler = null
-    var outputAvroFileCustomerHandler: AvroFileHandler = null
-    var outputAvroFileRevenueHandler: AvroFileHandler = null
-    var outputAvroFileFactHandler: AvroFileHandler = null
+    var outputAvroFileCustomerHandler: AvroFileHandler[Customer] = null
+    var outputAvroFileRevenueHandler: AvroFileHandler[Revenue] = null
+    var outputAvroFileFactHandler: AvroFileHandler[Fact] = null
     var eventsText: ArrayBuffer[String] = null
     var customerEventsText: ArrayBuffer[String] = null
     var revenueEventsText: ArrayBuffer[String] = null
     var factEventsText: ArrayBuffer[String] = null
-    var eventsAvro: ArrayBuffer[GenericRecord] = null
-    var customerEventsAvro: ArrayBuffer[GenericRecord] = null
-    var revenueEventsAvro: ArrayBuffer[GenericRecord] = null
-    var factEventsAvro: ArrayBuffer[GenericRecord] = null
+    var eventsAvro: ArrayBuffer[OSGERecord] = null
+    var customerEventsAvro: ArrayBuffer[Customer] = null
+    var revenueEventsAvro: ArrayBuffer[Revenue] = null
+    var factEventsAvro: ArrayBuffer[Fact] = null
     var multiTableText: mutable.Map[String, ArrayBuffer[String]] = null
-    var multiTableAvro: mutable.Map[String, ArrayBuffer[GenericRecord]] = null
-
+    var multiTableAvro: mutable.Map[String, ArrayBuffer[SpecificRecord]] = null
+    var customer: Customer = null
+    var fact: Fact = null
+    var revenue: Revenue = null
 
     if (config.multiTable) {
-      if (config.fileFormat == "avro") {
-        outputAvroFileCustomerHandler = new AvroFileHandler(new File(config.filePath, s"osge_customers_$threadName.data").toString, schemaMultiCustomer, config.fileRollSize)
-        outputAvroFileRevenueHandler = new AvroFileHandler(new File(config.filePath, s"osge_revenue_$threadName.data").toString, schemaMultiRevenue, config.fileRollSize)
-        outputAvroFileFactHandler = new AvroFileHandler(new File(config.filePath, s"osge_fact_$threadName.data").toString, schemaMultiFact,config.fileRollSize)
-        customerEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
-        revenueEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
-        factEventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
+      if (config.outputFormat == "avro") {
+        outputAvroFileCustomerHandler = new AvroFileHandler[Customer](new File(config.filePath, s"osge_customers_$threadName.data").toString, config.fileRollSize)
+        outputAvroFileRevenueHandler = new AvroFileHandler[Revenue](new File(config.filePath, s"osge_revenue_$threadName.data").toString, config.fileRollSize)
+        outputAvroFileFactHandler = new AvroFileHandler[Fact](new File(config.filePath, s"osge_fact_$threadName.data").toString, config.fileRollSize)
+        customerEventsAvro = new ArrayBuffer[Customer](config.flushBatch)
+        revenueEventsAvro = new ArrayBuffer[Revenue](config.flushBatch)
+        factEventsAvro = new ArrayBuffer[Fact](config.flushBatch)
       } else {
         outputFileCustomerHandler = new FileHandler(new File(config.filePath, s"osge_customers_$threadName.data").toString, config.fileRollSize)
         outputFileRevenueHandler = new FileHandler(new File(config.filePath, s"osge_revenue_$threadName.data").toString, config.fileRollSize)
@@ -253,9 +178,9 @@ class Writer(eventsStartRange: Int,
         factEventsText  = new ArrayBuffer[String](config.flushBatch)
       }
     } else {
-      if (config.fileFormat == "avro") {
-        outputAvroFileHandler = new AvroFileHandler(new File(config.filePath,s"osge_$threadName.data").toString, schemaLine, config.fileRollSize)
-        eventsAvro = new ArrayBuffer[GenericRecord](config.flushBatch)
+      if (config.outputFormat == "avro") {
+        outputAvroFileHandler = new AvroFileHandler[OSGERecord](new File(config.filePath,s"osge_$threadName.data").toString, config.fileRollSize)
+        eventsAvro = new ArrayBuffer[OSGERecord](config.flushBatch)
       } else {
         outputFileHandler = new FileHandler(new File(config.filePath, s"osge_$threadName.data").toString, config.fileRollSize)
         eventsText  = new ArrayBuffer[String](config.flushBatch)
@@ -265,7 +190,7 @@ class Writer(eventsStartRange: Int,
     var osgeEvent: OSGEEvent = null
 
     try {
-      if (config.fileFormat == "avro") {
+      if (config.outputFormat == "avro") {
         if (config.multiTable) {
           outputAvroFileCustomerHandler.openFile()
           outputAvroFileRevenueHandler.openFile()
@@ -284,7 +209,7 @@ class Writer(eventsStartRange: Int,
       }
 
       var textPlaceHolder:String = null
-      var avroPlaceHolder:GenericRecord = null
+      var avroPlaceHolder:OSGERecord = null
       (eventsStartRange to eventsEndRange).foreach { eventCount =>
         batchCount += 1
         osgeEvent = new OSGEGenerator().eventGenerate
@@ -293,16 +218,22 @@ class Writer(eventsStartRange: Int,
          * Fill the buffers
          */
         if (config.multiTable) {
-          if (config.fileFormat == "avro") {
-            multiTableAvro = avroMultiEvent(osgeEvent)
-            customerEventsAvro ++= multiTableAvro("Customer")
-            multiTableAvro("Customer").map(x => sizeCounter.getAndAdd(x.toString.getBytes.length))
-            revenueEventsAvro ++= multiTableAvro("Revenue")
-            multiTableAvro("Revenue").map(x => sizeCounter.getAndAdd(x.toString.getBytes.length))
-            factEventsAvro ++= multiTableAvro("Fact")
-            multiTableAvro("Fact").map(x => sizeCounter.getAndAdd(x.toString.getBytes.length))
+          if (config.outputFormat == "avro") {
+            customer = customerEvent(osgeEvent)
+            customerEventsAvro += customer
+            sizeCounter.getAndAdd(sizeCounter.getAndAdd(customer.toString.getBytes.length))
+            if (osgeEvent.cRevenue != 0) {
+              revenue = revenueEvent(osgeEvent)
+              revenueEventsAvro += revenue
+              sizeCounter.getAndAdd(sizeCounter.getAndAdd(revenue.toString.getBytes.length))
+            }
+            1 to osgeEvent.cLifeTime foreach { _ =>
+              fact = factEvent(osgeEvent)
+              factEventsAvro += fact
+              sizeCounter.getAndAdd(sizeCounter.getAndAdd(fact.toString.getBytes.length))
+            }
           } else {
-            multiTableText = formatEventMultiToString(osgeEvent, config.fileFormat)
+            multiTableText = formatEventMultiToString(osgeEvent, config.outputFormat)
             customerEventsText ++= multiTableText("Customer")
             multiTableText("Customer").map(x => sizeCounter.getAndAdd(x.getBytes.length))
             revenueEventsText ++= multiTableText("Revenue")
@@ -311,12 +242,12 @@ class Writer(eventsStartRange: Int,
             multiTableText("Fact").map(x => sizeCounter.getAndAdd(x.getBytes.length))
           }
         } else {
-          if (config.fileFormat == "avro") {
+          if (config.outputFormat == "avro") {
             avroPlaceHolder = avroEvent(osgeEvent)
             eventsAvro += avroPlaceHolder
             sizeCounter.getAndAdd(avroPlaceHolder.toString.getBytes.length)
           } else {
-            textPlaceHolder = formatEventToString(osgeEvent, config.fileFormat)
+            textPlaceHolder = formatEventToString(osgeEvent, config.outputFormat)
             eventsText += textPlaceHolder
             sizeCounter.getAndAdd(textPlaceHolder.getBytes.length)
           }
@@ -325,7 +256,7 @@ class Writer(eventsStartRange: Int,
         counter.getAndIncrement
         if (batchCount == config.flushBatch || batchCount == totalEvents) {
           if (config.multiTable) {
-            if (config.fileFormat == "avro") {
+            if (config.outputFormat == "avro") {
               outputAvroFileCustomerHandler.publishBuffered(customerEventsAvro)
               outputAvroFileRevenueHandler.publishBuffered(revenueEventsAvro)
               outputAvroFileFactHandler.publishBuffered(factEventsAvro)
@@ -342,7 +273,7 @@ class Writer(eventsStartRange: Int,
             }
             batchCount = 0
           } else {
-            if (config.fileFormat == "avro") {
+            if (config.outputFormat == "avro") {
               outputAvroFileHandler.publishBuffered(eventsAvro)
               eventsAvro.clear()
             } else {
@@ -359,7 +290,7 @@ class Writer(eventsStartRange: Int,
     }
     finally {
       if (config.multiTable) {
-        if (config.fileFormat == "avro") {
+        if (config.outputFormat == "avro") {
           outputAvroFileCustomerHandler.close()
           outputAvroFileRevenueHandler.close()
           outputAvroFileFactHandler.close()
@@ -369,7 +300,7 @@ class Writer(eventsStartRange: Int,
           outputFileFactHandler.close()
         }
       } else {
-        if (config.fileFormat == "avro") {
+        if (config.outputFormat == "avro") {
           outputAvroFileHandler.close()
         } else {
           outputFileHandler.close()

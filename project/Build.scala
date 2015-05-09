@@ -52,7 +52,8 @@ object Build extends Build {
         exclude("com.sun.jmx", "jmxri")
         excludeAll ExclusionRule(organization = "org.slf4j"),
       "io.github.cloudify" %% "scalazon" % "0.11",
-      "com.amazonaws" % "amazon-kinesis-client" % "1.0.0"
+      "com.amazonaws" % "amazon-kinesis-client" % "1.0.0",
+      "com.gensler" %% "scalavro" % "0.6.2"
     )
 
     val testDependencies = Seq(
