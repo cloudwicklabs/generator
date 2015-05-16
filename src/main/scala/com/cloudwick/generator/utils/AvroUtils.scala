@@ -20,13 +20,19 @@ object AvroUtils extends LazyLogging {
     val inputStream: BufferedInputStream = new BufferedInputStream(new FileInputStream(input))
     val reader: GenericDatumReader[Object] = new GenericDatumReader[Object]()
     val streamReader: DataFileStream[Object] = new DataFileStream[Object](inputStream, reader)
+    var breakCount = 0
 
     try {
       val schema: Schema = streamReader.getSchema
+      println("Here are the records limit (100)")
       println("Schema: " + schema)
 
       while (streamReader.hasNext) {
+        breakCount += 1
         println(streamReader.next())
+        if (breakCount == 100) {
+          System.exit(1)
+        }
       }
     }
   }
