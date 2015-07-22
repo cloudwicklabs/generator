@@ -11,6 +11,7 @@ import org.scalatest.FunSuite
  */
 class UtilsSuite extends FunSuite {
   private val utils = new Utils
+  private val dateUtils = new DateUtils
   private val formatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
   test("Check for pickWeighted()") {
@@ -45,7 +46,7 @@ class UtilsSuite extends FunSuite {
     val end = "10-Jan-10 12:00:00"
     val startDate = formatter.parse(start)
     val endDate = formatter.parse(end)
-    val rand = utils.genDate(start, end)
+    val rand = dateUtils.genDate(start, end)
     val randDate = new Date(rand)
     assert(randDate.after(startDate) && randDate.before(endDate))
   }

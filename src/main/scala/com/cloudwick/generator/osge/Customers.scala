@@ -1,6 +1,6 @@
 package com.cloudwick.generator.osge
 
-import com.cloudwick.generator.utils.Utils
+import com.cloudwick.generator.utils.{DateUtils, Utils}
 import scala.util.Random
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -41,6 +41,7 @@ object Customers {
 
 class Customers(cId: String, cName: String, cGender: String) {
   private val utils = new Utils
+  private val dateUtils = new DateUtils
   private val random = Random
   private val formatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
@@ -50,7 +51,7 @@ class Customers(cId: String, cName: String, cGender: String) {
   val custId = cId
   val custName = cName
   val custEmail = genEmail
-  val registerDate = utils.genDate("01-Jan-10 12:10:00", formatter.format(Calendar.getInstance().getTimeInMillis))
+  val registerDate = dateUtils.genDate("01-Jan-10 12:10:00", formatter.format(Calendar.getInstance().getTimeInMillis))
   val custCountry = utils.pickWeightedKey(Customers.COUNTRY_PROBABILITY)
   val custAddress = custCountry match {
     case "USA" => new Address().toString
@@ -103,7 +104,7 @@ class Customers(cId: String, cName: String, cGender: String) {
                     0
                   } else {
                     // generate a date between users registration date and time now
-                    utils.genDate(formatter.format(registerDate), formatter.format(Calendar.getInstance().getTimeInMillis))
+                    dateUtils.genDate(formatter.format(registerDate), formatter.format(Calendar.getInstance().getTimeInMillis))
                   }
   // games played by user based on gender
   val custGamesPlayed = gamesPlayed(custLifeTime, cGender)

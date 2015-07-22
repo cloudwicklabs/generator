@@ -6,7 +6,7 @@ import java.util.Calendar
 import java.util.concurrent.atomic.AtomicLong
 
 import com.cloudwick.generator.avro.{Customer, Fact, OSGERecord, Revenue}
-import com.cloudwick.generator.utils.{LazyLogging, AvroFileHandler, FileHandler, Utils}
+import com.cloudwick.generator.utils._
 import org.apache.avro.specific.SpecificRecord
 import org.slf4j.LoggerFactory
 
@@ -23,6 +23,7 @@ class Writer(eventsStartRange: Int,
              sizeCounter: AtomicLong,
              config: OptionsConfig) extends Runnable with LazyLogging {
   lazy val utils = new Utils
+  lazy val dateUtils = new DateUtils
   lazy val dateFormatter = new SimpleDateFormat("dd-MMM-yy HH:mm:ss")
 
   lazy val sleepTime = if(config.eventsPerSec == 0) 0 else 1000/config.eventsPerSec
@@ -72,7 +73,7 @@ class Writer(eventsStartRange: Int,
                             Customers.GAMES_MALE_PROBABILITY
                           }
       ms("Fact") += "%s%c%s%c%d\n".format(osgeEvent.cID, formatChar, utils.pickWeightedKey(gamesProbMap), formatChar,
-        utils.genDate(dateFormatter.format(osgeEvent.cRegisterDate), dateFormatter.format(Calendar.getInstance().getTimeInMillis)))
+        dateUtils.genDate(dateFormatter.format(osgeEvent.cRegisterDate), dateFormatter.format(Calendar.getInstance().getTimeInMillis)))
     }
     ms
   }
@@ -130,7 +131,7 @@ class Writer(eventsStartRange: Int,
       .setCId(event.cID)
       .setCGamePlayed(utils.pickWeightedKey(gamesProbMap))
       .setCGamePlayedDate(
-        utils.genDate(dateFormatter.format(event.cRegisterDate),
+        dateUtils.genDate(dateFormatter.format(event.cRegisterDate),
         dateFormatter.format(Calendar.getInstance().getTimeInMillis))
       )
       .build()
