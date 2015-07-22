@@ -20,6 +20,7 @@ function usage () {
   echo " [*] log       apache httpd logs generator"
   echo " [*] odvs      on-demand video service provider data generator"
   echo " [*] osge      online social gaming entertainment provider data generator"
+  echo " [*] retail    retail store data generator"
   echo " [*] cs        clickstream data generator"
   exit 1
 }
@@ -44,6 +45,8 @@ elif [[ "$COMMAND" = "odvs" ]]; then
   CLASS="com.cloudwick.generator.odvs.Driver"
 elif [[ "$COMMAND" = "osge" ]]; then
   CLASS="com.cloudwick.generator.osge.Driver"
+elif [[ "$COMMAND" = "retail" ]]; then
+  CLASS="com.cloudwick.generator.retail.Driver"
 elif [[ "$COMMAND" = "cs" ]]; then
   CLASS="com.cloudwick.generator.cs.Driver"
   echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
