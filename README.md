@@ -39,7 +39,7 @@ All the data generators have a driver command line interface, following links sh
 * [Log generator](https://github.com/cloudwicklabs/generator/wiki/Log-Generator-Driver)
 * [ODVS generator](https://github.com/cloudwicklabs/generator/wiki/ODVS-Generator-Driver)
 * [OSGE generator](https://github.com/cloudwicklabs/generator/wiki/OSGE-Generator-Driver)
-
+* [Retail generator] (https://github.com/cloudwicklabs/generator/wiki/Retail-Generator-Driver)
 ### Feedback
 
 For more generators, your specific use-cases or to leave feedback contact [support](mailto:support@cloudwick.com)
