@@ -43,8 +43,8 @@ All the data generators have a driver command line interface, following links sh
 
 For more generators, your specific use-cases or to leave feedback contact [support](mailto:support@cloudwick.com)
 
-### License and Authors
+### License
 
-**Authors**: [Ashrith](https://github.com/ashrithr)
+**[Contributers](https://github.com/cloudwicklabs/generator/graphs/contributors)**
 
 Apache 2.0. Please see `LICENSE.txt`. All contents copyright (c) 2013, Cloudwick Labs.
