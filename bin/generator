@@ -17,11 +17,12 @@ fi
 function usage () {
   echo "Usage: `basename $0` DRIVER"
   echo "Supported GENERATOR(s)"
-  echo " [*] log       apache httpd logs generator"
-  echo " [*] odvs      on-demand video service provider data generator"
-  echo " [*] osge      online social gaming entertainment provider data generator"
-  echo " [*] retail    retail store data generator"
-  echo " [*] cs        clickstream data generator"
+  echo " [*] log            apache httpd logs generator"
+  echo " [*] odvs           on-demand video service provider data generator"
+  echo " [*] osge           online social gaming entertainment provider data generator"
+  echo " [*] retail         retail store data generator"
+  echo " [*] manufacturer   manufacturer data generator"
+  echo " [*] cs             click stream data generator"
   exit 1
 }
 
@@ -47,6 +48,8 @@ elif [[ "$COMMAND" = "osge" ]]; then
   CLASS="com.cloudwick.generator.osge.Driver"
 elif [[ "$COMMAND" = "retail" ]]; then
   CLASS="com.cloudwick.generator.retail.Driver"
+elif [[ "$COMMAND" = "manufacturer" ]]; then
+  CLASS="com.cloudwick.generator.manufacturer.Driver"
 elif [[ "$COMMAND" = "cs" ]]; then
   CLASS="com.cloudwick.generator.cs.Driver"
   echo "[ERROR]: Generator not yet implemented, please contact support@cloudwicklabs.com" && exit 2
